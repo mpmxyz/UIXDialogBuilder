@@ -1,16 +1,16 @@
 ﻿using ResoniteModLoader;
 
-namespace SampleMod
+namespace UIXDialogBuilder
 {
     /// <summary>
     /// This mod is an implementation based on the example given in https://github.com/resonite-modding-group/ResoniteModLoader/blob/main/doc/making_mods.md.
     /// </summary>
-    public class SampleModRML : ResoniteMod, ISampleMod
+    public class UIXDialogBuilderModRML : ResoniteMod, IUIXDialogBuilderMod
     {
-        public override string Name => "SampleMod";
+        public override string Name => "UIXDialogBuilder";
         public override string Author => "mpmxyz";
-        public override string Version => "1.1.1"; //Version of the mod, should match the AssemblyVersion
-        public override string Link => "https://github.com/mpmxyz/ResoniteSampleMod";
+        public override string Version => "1.0.0"; //Version of the mod, should match the AssemblyVersion
+        public override string Link => "https://github.com/mpmxyz/UIXDialogBuilder";
 
 
         //The following
@@ -28,14 +28,14 @@ namespace SampleMod
             //Patches.Apply(this);
 
             //Various log methods provided by the mod loader, below is an example of how they will look
-            //3:14:42 AM.069 ( -1 FPS)  [INFO] [ResoniteModLoader/SampleMod] a regular log
+            //3:14:42 AM.069 ( -1 FPS)  [INFO] [ResoniteModLoader/UIXDialogBuilder] a regular log
             Debug("a debug log");
             Msg("a regular log");
             Warn("a warn log");
             Error("an error log");
         }
 
-        public void DoSomething()
+        public void SpawnSampleDialog()
         {
             Warn("Hello World!");
         }

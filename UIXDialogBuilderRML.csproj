@@ -6,7 +6,7 @@
     <StartArguments>-Screen -LoadAssembly Libraries/ResoniteModLoader.dll</StartArguments>
     <VariantSuffix>ResoniteModLoader</VariantSuffix>
   </PropertyGroup>
-  <Import Project="./SampleMod.csproj" />
+  <Import Project="./UIXDialogBuilder.csproj" />
   <PropertyGroup>
     <PostBuildEvent Condition="$([MSBuild]::IsOSPlatform('Windows'))">
       copy /Y "$(AssemblyName).dll" "$(ResonitePath)\rml_mods\$(AssemblyName).dll"
@@ -25,6 +25,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PatchesHarmony.cs" />
-    <Compile Include="SampleModRML.cs" />
+    <Compile Include="UIXDialogBuilderModRML.cs" />
   </ItemGroup>
 </Project>

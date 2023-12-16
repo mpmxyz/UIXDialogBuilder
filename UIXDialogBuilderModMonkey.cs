@@ -3,24 +3,24 @@ using MonkeyLoader.Configuration;
 using MonkeyLoader.Resonite;
 using System;
 
-namespace SampleMod
+namespace UIXDialogBuilder
 {
-    public class SampleModMonkey : ResoniteMonkey<SampleModMonkey>, ISampleMod
+    public class UIXDialogBuilderModMonkey : ResoniteMonkey<UIXDialogBuilderModMonkey>, IUIXDialogBuilderMod
     {
-        public override string Name => "SampleMod";
+        public override string Name => "UIXDialogBuilder";
 
-        private SampleModMonkeyConfig LoadedConfig;
+        private UIXDialogBuilderMonkeyConfig LoadedConfig;
 
         public bool Enabled => LoadedConfig.Enabled.GetValue();
 
-        public void DoSomething()
+        public void SpawnSampleDialog()
         {
             Logger.Warn(() => "Hello World!");
         }
 
         protected override bool OnEngineReady()
         {
-            LoadedConfig = Config.LoadSection<SampleModMonkeyConfig>();
+            LoadedConfig = Config.LoadSection<UIXDialogBuilderMonkeyConfig>();
             PatchesHarmony.Apply(this);
             return base.OnEngineReady();
         }
@@ -40,13 +40,13 @@ namespace SampleMod
             return base.OnShutdown();
         }
 
-        private class SampleModMonkeyConfig : ConfigSection
+        private class UIXDialogBuilderMonkeyConfig : ConfigSection
         {
             public DefiningConfigKey<bool> Enabled = new DefiningConfigKey<bool>("Enabled", "Enables a small message on each button click.", () => true);
 
             public override string Description => "MonkeyLoader flavor of sample mod's config";
 
-            public override string Name => "SampleMod";
+            public override string Name => "UIXDialogBuilder";
 
             public override Version Version => new Version(1, 0, 0);
         }

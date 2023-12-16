@@ -22,9 +22,9 @@ on:
       RESONITE_CLONE_TOKEN:
         required: true
 env:
-  ARTIFACT_NAME: "SampleMod"
-  ASSEMBLY_NAME: "mpmxyz.SampleMod.MonkeyLoader"
-  PROJECT_FILE: "SampleModMonkey.csproj"
+  ARTIFACT_NAME: "UIXDialogBuilder"
+  ASSEMBLY_NAME: "mpmxyz.UIXDialogBuilder.MonkeyLoader"
+  PROJECT_FILE: "UIXDialogBuilderMonkey.csproj"
   ResonitePath: "${{ github.workspace }}/Download/Resonite"
   PROJECT_URL: "${{ github.server_url }}/${{ github.repository }}"
   PROJECT_PATH: "${{ github.workspace }}/repo"

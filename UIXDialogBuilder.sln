@@ -8,13 +8,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleMod", "SampleMod.csproj", "{3FA1B07B-D0C9-4EA5-B228-93DD6891EFD2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UIXDialogBuilder", "UIXDialogBuilder.csproj", "{3FA1B07B-D0C9-4EA5-B228-93DD6891EFD2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test", "Test\Test.csproj", "{DAB2D7A9-757B-4876-B95B-64A2E4F965B6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleModMonkey", "SampleModMonkey.csproj", "{AF85F55F-B5DD-46E5-BAD4-331329445A22}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UIXDialogBuilderMonkey", "UIXDialogBuilderMonkey.csproj", "{AF85F55F-B5DD-46E5-BAD4-331329445A22}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleModRML", "SampleModRML.csproj", "{0A214F6D-07FD-49F5-B19A-7463485B685F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UIXDialogBuilderRML", "UIXDialogBuilderRML.csproj", "{0A214F6D-07FD-49F5-B19A-7463485B685F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestRML", "TestRML\TestRML.csproj", "{EEC62D32-AB07-43D7-A5CF-620A8272DB48}"
 EndProject

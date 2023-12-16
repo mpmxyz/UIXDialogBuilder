@@ -1,5 +1,5 @@
 {
-  "name": "SampleMod",
+  "name": "UIXDialogBuilder",
   "id": "$RML_AUTHOR_ID.$RML_MOD_ID",
   "description": "A Mod for Resonite that just adds a \"Hello World!\" log entry whenever you click a button.",
   "category": "misc",
@@ -11,8 +11,8 @@
       "releaseUrl": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/v$RELEASE_VERSION",
       "artifacts": [
         {
-          "url": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/v$RELEASE_VERSION/mpmxyz.SampleMod.ResoniteModLoader.dll",
-          "filename": "mpmxyz.SampleMod.ResoniteModLoader.dll",
+          "url": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/v$RELEASE_VERSION/mpmxyz.UIXDialogBuilder.ResoniteModLoader.dll",
+          "filename": "mpmxyz.UIXDialogBuilder.ResoniteModLoader.dll",
           "sha256": "will be filled automatically",
           "installLocation": "rml_mods"
         }

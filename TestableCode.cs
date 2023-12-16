@@ -1,4 +1,4 @@
-﻿namespace SampleMod
+﻿namespace UIXDialogBuilder
 {
     class TestableCode
     {

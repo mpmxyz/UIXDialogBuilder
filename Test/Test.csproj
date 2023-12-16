@@ -47,6 +47,6 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SampleMod.csproj" />
+    <ProjectReference Include="..\UIXDialogBuilder.csproj" />
   </ItemGroup>
 </Project>
