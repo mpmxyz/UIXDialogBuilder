@@ -8,7 +8,7 @@ namespace UIXDialogBuilder
         [TestMethod]
         public void TestModHasNonEmptyName()
         {
-            var mod = UIXDialogBuilderMonkey.Instance;
+            var mod = UIXDialogBuilderModMonkey.Instance;
             Assert.IsNotNull(mod.Name);
             Assert.AreNotEqual("", mod.Name);
         }

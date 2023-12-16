@@ -20,7 +20,7 @@
     <Exec Condition="$([MSBuild]::IsOSPlatform('Linux'))" Command="cp -f &quot;$(OutputPath)/../$(AssemblyName).$(Version).nupkg&quot; &quot;$(ResonitePath)/MonkeyLoader/Mods/$(AssemblyName).nupkg&quot;" />
   </Target>
   <ItemGroup>
-    <Compile Update="UIXDialogBuilderMonkey.cs" />
+    <Compile Update="UIXDialogBuilderModMonkey.cs" />
     <Reference Include="Harmony">
       <HintPath>$(ResonitePath)\0Harmony.dll</HintPath>
     </Reference>
@@ -31,6 +31,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PatchesHarmony.cs" />
-    <Compile Include="UIXDialogBuilderMonkey.cs" />
+    <Compile Include="UIXDialogBuilderModMonkey.cs" />
   </ItemGroup>
 </Project>

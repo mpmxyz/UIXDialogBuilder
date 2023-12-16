@@ -16,16 +16,16 @@ on:
         default: "1.0.0"
         description: "Force version number"
 env:
-  REPO_FROM: "mpmxyz/ResoniteSampleMod"
+  REPO_FROM: "mpmxyz/UIXDialogBuilder"
   REPO_KEY: "\"\"REPO\"\""
   REPO_TO: "${{ github.repository }}"
-  HARMONY_FROM: "com.github.mpmxyz.SampleMod"
+  HARMONY_FROM: "com.github.mpmxyz.UIXDialogBuilder"
   HARMONY_KEY: "\"\"HARMONY\"\""
   HARMONY_TO: "com.github.${{ github.repository_owner }}.${{ inputs.MOD_NAME }}"
-  ASSEMBLY_FROM: "mpmxyz.SampleMod"
+  ASSEMBLY_FROM: "mpmxyz.UIXDialogBuilder"
   ASSEMBLY_KEY: "\"\"ASSEMBLY\"\""
   ASSEMBLY_TO: "${{ github.repository_owner }}.${{ inputs.MOD_NAME }}"
-  MOD_FROM: "SampleMod"
+  MOD_FROM: "UIXDialogBuilder"
   MOD_KEY: "\"\"MOD\"\""
   MOD_TO: "${{ inputs.MOD_NAME }}"
   USER_FROM: "mpmxyz"
@@ -89,8 +89,8 @@ jobs:
       - name: "Force version number"
         if: "${{ inputs.FORCE_VERSION != '' }}"
         run: |
-          sed -i -e 's=<Version>[^<]*</Version>=<Version>${{ inputs.FORCE_VERSION }}</Version>=g' SampleMod.csproj
-          sed -i -e 's/Version *=> *"[^"]*"/Version => "${{ inputs.FORCE_VERSION }}"/g' SampleModRML.cs
+          sed -i -e 's=<Version>[^<]*</Version>=<Version>${{ inputs.FORCE_VERSION }}</Version>=g' UIXDialogBuilder.csproj
+          sed -i -e 's/Version *=> *"[^"]*"/Version => "${{ inputs.FORCE_VERSION }}"/g' UIXDialogBuilderRML.cs
 
       - name: "Rename files"
         run: |

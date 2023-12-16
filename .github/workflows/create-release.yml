@@ -29,7 +29,7 @@ on:
         default: true
 env:
   NUGET_PUBLISH_TARGET: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-  ARTIFACT_NAME: SampleMod
+  ARTIFACT_NAME: UIXDialogBuilder
 name: "Create Release"
 jobs:
   check-inputs:

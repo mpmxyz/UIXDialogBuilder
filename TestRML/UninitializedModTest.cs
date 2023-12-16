@@ -8,7 +8,7 @@ namespace UIXDialogBuilder
         [TestMethod]
         public void TestModHasNonEmptyName()
         {
-            var mod = new UIXDialogBuilderRML();
+            var mod = new UIXDialogBuilderModRML();
             Assert.IsNotNull(mod.Name);
             Assert.AreNotEqual("", mod.Name);
         }
@@ -16,7 +16,7 @@ namespace UIXDialogBuilder
         [TestMethod]
         public void TestModHasNonEmptyAuthor()
         {
-            var mod = new UIXDialogBuilderRML();
+            var mod = new UIXDialogBuilderModRML();
             Assert.IsNotNull(mod.Author);
             Assert.AreNotEqual("", mod.Author);
         }
@@ -24,7 +24,7 @@ namespace UIXDialogBuilder
         [TestMethod]
         public void TestModHasNonEmptyLink()
         {
-            var mod = new UIXDialogBuilderRML();
+            var mod = new UIXDialogBuilderModRML();
             Assert.IsNotNull(mod.Link);
             Assert.AreNotEqual("", mod.Link);
         }
@@ -32,7 +32,7 @@ namespace UIXDialogBuilder
         [TestMethod]
         public void TestModHasNonEmptyVersion()
         {
-            var mod = new UIXDialogBuilderRML();
+            var mod = new UIXDialogBuilderModRML();
             Assert.IsNotNull(mod.Version);
             Assert.AreNotEqual("", mod.Version);
         }
@@ -45,7 +45,7 @@ namespace UIXDialogBuilder
         [TestMethod]
         public void TestVersionMatchesReleaseBuild()
         {
-            var mod = new UIXDialogBuilderRML();
+            var mod = new UIXDialogBuilderModRML();
             var expected = System.Environment.GetEnvironmentVariable("RELEASE_VERSION");
             if (expected != null && expected.Length != 0)
             {

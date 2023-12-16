@@ -5,7 +5,7 @@ using System;
 
 namespace UIXDialogBuilder
 {
-    public class UIXDialogBuilderMonkey : ResoniteMonkey<UIXDialogBuilderMonkey>, IUIXDialogBuilder
+    public class UIXDialogBuilderModMonkey : ResoniteMonkey<UIXDialogBuilderModMonkey>, IUIXDialogBuilderMod
     {
         public override string Name => "UIXDialogBuilder";
 
@@ -13,7 +13,7 @@ namespace UIXDialogBuilder
 
         public bool Enabled => LoadedConfig.Enabled.GetValue();
 
-        public void DoSomething()
+        public void SpawnSampleDialog()
         {
             Logger.Warn(() => "Hello World!");
         }

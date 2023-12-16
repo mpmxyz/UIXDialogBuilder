@@ -136,7 +136,7 @@
     <Folder Remove="Test" />
     <Folder Remove="TestRML" />
     <Folder Remove="TestMonkey" />
-    <Compile Remove="UIXDialogBuilderRML.cs" />
-    <Compile Remove="UIXDialogBuilderMonkey.cs" />
+    <Compile Remove="UIXDialogBuilderModRML.cs" />
+    <Compile Remove="UIXDialogBuilderModMonkey.cs" />
   </ItemGroup>
 </Project>

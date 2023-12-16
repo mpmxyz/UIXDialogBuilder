@@ -26,7 +26,7 @@ on:
         required: true
 env:
   RML_AUTHOR_ID: "${{ github.repository_owner }}"
-  RML_MOD_ID: "SampleMod"
+  RML_MOD_ID: "UIXDialogBuilder"
   CHECKOUT_PATH: "${{ github.workspace }}/repo"
   RML_MANIFEST_PATH: "${{ github.workspace }}/manifest"
   RML_MANIFEST_REPO: "${{ github.repository_owner }}/resonite-mod-manifest"

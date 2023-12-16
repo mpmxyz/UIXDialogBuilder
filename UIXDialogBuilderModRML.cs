@@ -5,7 +5,7 @@ namespace UIXDialogBuilder
     /// <summary>
     /// This mod is an implementation based on the example given in https://github.com/resonite-modding-group/ResoniteModLoader/blob/main/doc/making_mods.md.
     /// </summary>
-    public class UIXDialogBuilderRML : ResoniteMod, IUIXDialogBuilder
+    public class UIXDialogBuilderModRML : ResoniteMod, IUIXDialogBuilderMod
     {
         public override string Name => "UIXDialogBuilder";
         public override string Author => "mpmxyz";
@@ -35,7 +35,7 @@ namespace UIXDialogBuilder
             Error("an error log");
         }
 
-        public void DoSomething()
+        public void SpawnSampleDialog()
         {
             Warn("Hello World!");
         }
