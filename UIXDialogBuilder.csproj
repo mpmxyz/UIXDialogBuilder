@@ -3,14 +3,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <VariantSuffix Condition="'$(VariantSuffix)' == ''">Common</VariantSuffix>
-    <AssemblyName>mpmxyz.SampleMod.$(VariantSuffix)</AssemblyName>
+    <AssemblyName>mpmxyz.UIXDialogBuilder.$(VariantSuffix)</AssemblyName>
     <Authors>mpmxyz</Authors>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyTitle>SampleMod</AssemblyTitle>
-    <Product>SampleMod</Product>
+    <AssemblyTitle>UIXDialogBuilder</AssemblyTitle>
+    <Product>UIXDialogBuilder</Product>
     <Description>A sample Resonite Mod</Description>
     <Copyright>CC0</Copyright>
-    <Version>1.1.1</Version>
+    <Version>1.0.0</Version>
     <PackageProjectUrl>$(PROJECT_URL)</PackageProjectUrl>
     <PackageReleaseNotes>$(RELEASE_NOTES)</PackageReleaseNotes>
     <PackageTags>Resonite</PackageTags>
@@ -136,7 +136,7 @@
     <Folder Remove="Test" />
     <Folder Remove="TestRML" />
     <Folder Remove="TestMonkey" />
-    <Compile Remove="SampleModRML.cs" />
-    <Compile Remove="SampleModMonkey.cs" />
+    <Compile Remove="UIXDialogBuilderRML.cs" />
+    <Compile Remove="UIXDialogBuilderMonkey.cs" />
   </ItemGroup>
 </Project>

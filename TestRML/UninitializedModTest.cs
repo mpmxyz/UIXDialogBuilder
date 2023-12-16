@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace SampleMod
+namespace UIXDialogBuilder
 {
     [TestClass]
     public class UninitializedModTest
@@ -8,7 +8,7 @@ namespace SampleMod
         [TestMethod]
         public void TestModHasNonEmptyName()
         {
-            var mod = new SampleModRML();
+            var mod = new UIXDialogBuilderRML();
             Assert.IsNotNull(mod.Name);
             Assert.AreNotEqual("", mod.Name);
         }
@@ -16,7 +16,7 @@ namespace SampleMod
         [TestMethod]
         public void TestModHasNonEmptyAuthor()
         {
-            var mod = new SampleModRML();
+            var mod = new UIXDialogBuilderRML();
             Assert.IsNotNull(mod.Author);
             Assert.AreNotEqual("", mod.Author);
         }
@@ -24,7 +24,7 @@ namespace SampleMod
         [TestMethod]
         public void TestModHasNonEmptyLink()
         {
-            var mod = new SampleModRML();
+            var mod = new UIXDialogBuilderRML();
             Assert.IsNotNull(mod.Link);
             Assert.AreNotEqual("", mod.Link);
         }
@@ -32,7 +32,7 @@ namespace SampleMod
         [TestMethod]
         public void TestModHasNonEmptyVersion()
         {
-            var mod = new SampleModRML();
+            var mod = new UIXDialogBuilderRML();
             Assert.IsNotNull(mod.Version);
             Assert.AreNotEqual("", mod.Version);
         }
@@ -45,7 +45,7 @@ namespace SampleMod
         [TestMethod]
         public void TestVersionMatchesReleaseBuild()
         {
-            var mod = new SampleModRML();
+            var mod = new UIXDialogBuilderRML();
             var expected = System.Environment.GetEnvironmentVariable("RELEASE_VERSION");
             if (expected != null && expected.Length != 0)
             {

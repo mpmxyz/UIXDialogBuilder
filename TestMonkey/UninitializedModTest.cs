@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace SampleMod
+namespace UIXDialogBuilder
 {
     [TestClass]
     public class UninitializedModTest
@@ -8,7 +8,7 @@ namespace SampleMod
         [TestMethod]
         public void TestModHasNonEmptyName()
         {
-            var mod = SampleModMonkey.Instance;
+            var mod = UIXDialogBuilderMonkey.Instance;
             Assert.IsNotNull(mod.Name);
             Assert.AreNotEqual("", mod.Name);
         }

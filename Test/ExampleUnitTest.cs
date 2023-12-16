@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace SampleMod
+namespace UIXDialogBuilder
 {
     [TestClass]
     public class ExampleUnitTest

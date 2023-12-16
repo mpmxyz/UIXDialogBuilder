@@ -1,6 +1,6 @@
-﻿namespace SampleMod
+﻿namespace UIXDialogBuilder
 {
-    internal interface ISampleMod
+    internal interface IUIXDialogBuilder
     {
         bool Enabled { get; }
 
