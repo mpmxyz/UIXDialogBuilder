@@ -67,7 +67,8 @@ namespace UIXDialogBuilder
                 get => _Slot.ActiveSelf;
                 set => _Slot.ActiveSelf = value;
             }
-            internal override bool EffectivelyEnabled {
+            internal override bool EffectivelyEnabled
+            {
                 set { }
             }
 
@@ -79,7 +80,7 @@ namespace UIXDialogBuilder
 
             public override void Reset()
             {
-                
+
             }
         }
     }

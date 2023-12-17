@@ -77,7 +77,8 @@ namespace UIXDialogBuilder
 
             public override IEnumerable<object> BoundErrorKeys => new List<object>();
 
-            public override bool Visible {
+            public override bool Visible
+            {
                 get => _Slot.ActiveSelf;
                 set => _Slot.ActiveSelf = value;
             }
@@ -99,7 +100,7 @@ namespace UIXDialogBuilder
 
             public override void Reset()
             {
-                
+
             }
 
             internal bool IsValid(IDictionary<object, string> errors)

@@ -53,7 +53,7 @@ namespace UIXDialogBuilder
                     return StaticBuildFunctions.BuildEditor(uiBuilder2.Root, dialogState, fieldInfo, () => onChange(), uiBuilder2, conf);
                 }
             });
-            
+
             var key = fieldInfo.Name;
             if (conf.ShowErrors)
             {
@@ -92,8 +92,8 @@ namespace UIXDialogBuilder
             public override IEnumerable<object> BoundErrorKeys => new List<object>(new object[] { _Key });
 
             public override bool Visible
-            { 
-                get => _Slot.ActiveSelf; 
+            {
+                get => _Slot.ActiveSelf;
                 set => _Slot.ActiveSelf = value;
             }
             internal override bool EffectivelyEnabled

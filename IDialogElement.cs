@@ -8,7 +8,7 @@ namespace UIXDialogBuilder
         object Key { get; }
         IEnumerable<object> BoundErrorKeys { get; }
 
-        bool ParentEnabled { get;  set; }
+        bool ParentEnabled { get; set; }
         bool Enabled { get; set; }
         bool Visible { get; set; }
 

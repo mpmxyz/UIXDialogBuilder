@@ -118,7 +118,7 @@ namespace UIXDialogBuilder
             object mapperInstance = reversibleMapper.GetConstructor(Array.Empty<Type>()).Invoke(Array.Empty<object>());
             object adaptedObj = adaptedType
                 .GetConstructor(new Type[] { mappingTypes[0], typeof(IReversibleMapper<,>).MakeGenericType(mappingTypes) })
-                .Invoke(new object[] { originalProp.GetValue(originalObj), mapperInstance});
+                .Invoke(new object[] { originalProp.GetValue(originalObj), mapperInstance });
             void adaptedOnChange()
             {
                 object newValue = iValueProp.GetValue(adaptedObj);

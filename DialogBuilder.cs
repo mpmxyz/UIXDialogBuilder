@@ -156,7 +156,7 @@ namespace UIXDialogBuilder
             var inUserspace = world.IsUserspace();
 
             uiBuilder.Root.OnPrepareDestroy += (slot) => dialog.Dispose();
-            
+
             (IDictionary<object, string>, IDictionary<object, string>) onChange()
             {
                 IDictionary<object, string> errors, unboundErrors;

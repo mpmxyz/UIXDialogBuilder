@@ -13,7 +13,8 @@ namespace UIXDialogBuilder
                 var allKeys = new HashSet<object>();
                 foreach (var element in Elements)
                 {
-                    foreach (var key in element.BoundErrorKeys) {
+                    foreach (var key in element.BoundErrorKeys)
+                    {
                         allKeys.Add(key);
                     }
                 }

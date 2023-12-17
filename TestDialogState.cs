@@ -102,9 +102,11 @@ namespace UIXDialogBuilder
         {
             var errors = new Dictionary<object, string>();
             UniLog.Log($"Validate {matrix} {text} {output}");
-            if (list != null) {
+            if (list != null)
+            {
                 UniLog.Log($"List with {list.Count} items:");
-                foreach (var item in list) {
+                foreach (var item in list)
+                {
                     UniLog.Log($" {item}");
                     if (item.Length == 0)
                     {
