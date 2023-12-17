@@ -1,31 +1,37 @@
-﻿using FrooxEngine.UIX;
+﻿using Elements.Core;
+using FrooxEngine;
 using HarmonyLib;
+using System;
 
 namespace UIXDialogBuilder
 {
     internal class PatchesHarmony
     {
-        private static IUIXDialogBuilderMod ModInstance;
-
-        internal static void Apply(IUIXDialogBuilderMod instance)
+        internal static void Apply()
         {
-            ModInstance = instance;
             Harmony harmony = new Harmony("com.github.mpmxyz.UIXDialogBuilder");
             harmony.PatchAll();
         }
 
-        [HarmonyPatch(typeof(Button), "OnPressBegin")]
+#pragma warning disable IDE0051 // Remove unused private members
+        [HarmonyPatch(typeof(DevTool), "GenerateMenuItems")]
         class ClassName_MethodName_Patch
         {
             [HarmonyPostfix]
-            static void Postfix(Button __instance, Canvas.InteractionData eventData)
+            static void AppendContextMenu(InteractionHandler tool, ContextMenu menu)
             {
-                if (!ModInstance.Enabled)
+                if (!ModInstance.Current.DebugEnabled)
                 {
                     return; //In this example if the mod is not enabled, we'll just return before doing anything
                 }
-                ModInstance.SpawnSampleDialog();
+                var item = menu.AddItem("Test dialog", (Uri)null, colorX.Black);
+                item.Button.LocalPressed += (b, e) => new DialogBuilder<TestDialogState>()
+                .BuildWindow(
+                    "Test",
+                    menu.World,
+                    new TestDialogState());
             }
         }
     }
+#pragma warning restore IDE0051 // Remove unused private members
 }

@@ -8,7 +8,7 @@ namespace UIXDialogBuilder
         [TestMethod]
         public void TestIncrement()
         {
-            Assert.AreEqual(1, TestableCode.Increment(0));
+            //TODO: test PageRange
         }
     }
 }

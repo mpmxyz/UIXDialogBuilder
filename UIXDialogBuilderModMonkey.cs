@@ -1,4 +1,5 @@
 ﻿
+using Elements.Core;
 using MonkeyLoader.Configuration;
 using MonkeyLoader.Resonite;
 using System;
@@ -11,17 +12,28 @@ namespace UIXDialogBuilder
 
         private UIXDialogBuilderMonkeyConfig LoadedConfig;
 
-        public bool Enabled => LoadedConfig.Enabled.GetValue();
+        public bool DebugEnabled => LoadedConfig.DebugEnabled.GetValue();
 
-        public void SpawnSampleDialog()
+        public string SecretEditorTitle => DefaultConfigs.SecretEditorTitle;
+        public string OpenSecretEditorTitle => DefaultConfigs.OpenSecretEditorTitle;
+        public string SecretEditorAcceptText => DefaultConfigs.SecretEditorAcceptText;
+        public string SecretPatternText => DefaultConfigs.SecretPatternText;
+        public float ConfigPanelHeight => DefaultConfigs.ConfigPanelHeight;
+        public float Spacing => DefaultConfigs.Spacing;
+        public float ButtonHeight => DefaultConfigs.ButtonHeight;
+        public float ErrorHeight => DefaultConfigs.ErrorHeight;
+        public float2 CanvasSize => DefaultConfigs.CanvasSize;
+
+
+        public UIXDialogBuilderModMonkey()
         {
-            Logger.Warn(() => "Hello World!");
+            ModInstance.Current = this;
         }
 
         protected override bool OnEngineReady()
         {
             LoadedConfig = Config.LoadSection<UIXDialogBuilderMonkeyConfig>();
-            PatchesHarmony.Apply(this);
+            PatchesHarmony.Apply();
             return base.OnEngineReady();
         }
 
@@ -42,7 +54,7 @@ namespace UIXDialogBuilder
 
         private class UIXDialogBuilderMonkeyConfig : ConfigSection
         {
-            public DefiningConfigKey<bool> Enabled = new DefiningConfigKey<bool>("Enabled", "Enables a small message on each button click.", () => true);
+            public DefiningConfigKey<bool> DebugEnabled = new DefiningConfigKey<bool>("DebugEnabled", "Enables the option to spawn a test dialog with the DevToolTip context menu.", () => true);
 
             public override string Description => "MonkeyLoader flavor of sample mod's config";
 

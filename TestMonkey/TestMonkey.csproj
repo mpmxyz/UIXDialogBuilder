@@ -50,6 +50,9 @@
 		<Reference Include="MonkeyLoader">
 			<HintPath>$(ResonitePath)\MonkeyLoader.dll</HintPath>
 		</Reference>
+		<Reference Include="Elements.Core">
+			<HintPath>$(ResonitePath)\Resonite_Data\Managed\Elements.Core.dll</HintPath>
+		</Reference>
 		<ProjectReference Include="..\UIXDialogBuilderMonkey.csproj" />
 	</ItemGroup>
 </Project>

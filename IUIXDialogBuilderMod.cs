@@ -1,9 +1,19 @@
-﻿namespace UIXDialogBuilder
-{
-    internal interface IUIXDialogBuilderMod
-    {
-        bool Enabled { get; }
+﻿using Elements.Core;
 
-        void SpawnSampleDialog();
+namespace UIXDialogBuilder
+{
+    public interface IUIXDialogBuilderMod
+    {
+        bool DebugEnabled { get; }
+
+        string SecretEditorTitle { get; }
+        string OpenSecretEditorTitle { get; }
+        string SecretEditorAcceptText { get; }
+        string SecretPatternText { get; }
+        float ConfigPanelHeight { get; }
+        float Spacing { get; }
+        float ButtonHeight { get; }
+        float ErrorHeight { get; }
+        float2 CanvasSize { get; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using ResoniteModLoader;
+﻿using Elements.Core;
+using ResoniteModLoader;
 
 namespace UIXDialogBuilder
 {
@@ -12,32 +13,35 @@ namespace UIXDialogBuilder
         public override string Version => "1.0.0"; //Version of the mod, should match the AssemblyVersion
         public override string Link => "https://github.com/mpmxyz/UIXDialogBuilder";
 
+        public UIXDialogBuilderModRML()
+        {
+            ModInstance.Current = this;
+        }
 
         //The following
         [AutoRegisterConfigKey]
-        private static readonly ModConfigurationKey<bool> enabled = new ModConfigurationKey<bool>("enabled", "Should the mod be enabled", () => true); //Optional config settings
+        private static readonly ModConfigurationKey<bool> enabled = new ModConfigurationKey<bool>("enabled", "Should the mod be enabled", () => DefaultConfigs.DebugEnabled); //Optional config settings
 
         private static ModConfiguration Config;//If you use config settings, this will be where you interface with them
 
-        public bool Enabled => Config.GetValue(enabled);
+        public bool DebugEnabled => Config.GetValue(enabled);
+
+        public string SecretEditorTitle => DefaultConfigs.SecretEditorTitle;
+        public string OpenSecretEditorTitle => DefaultConfigs.OpenSecretEditorTitle;
+        public string SecretEditorAcceptText => DefaultConfigs.SecretEditorAcceptText;
+        public string SecretPatternText => DefaultConfigs.SecretPatternText;
+        public float ConfigPanelHeight => DefaultConfigs.ConfigPanelHeight;
+        public float Spacing => DefaultConfigs.Spacing;
+        public float ButtonHeight => DefaultConfigs.ButtonHeight;
+        public float ErrorHeight => DefaultConfigs.ErrorHeight;
+        public float2 CanvasSize => DefaultConfigs.CanvasSize;
 
         public override void OnEngineInit()
         {
-            Config = GetConfiguration(); //Get this mods' current ModConfiguration
-            Config.Save(true); //If you'd like to save the default config values to file
-            //Patches.Apply(this);
+            Config = GetConfiguration();
+            Config.Save(true);
 
-            //Various log methods provided by the mod loader, below is an example of how they will look
-            //3:14:42 AM.069 ( -1 FPS)  [INFO] [ResoniteModLoader/UIXDialogBuilder] a regular log
-            Debug("a debug log");
-            Msg("a regular log");
-            Warn("a warn log");
-            Error("an error log");
-        }
-
-        public void SpawnSampleDialog()
-        {
-            Warn("Hello World!");
+            PatchesHarmony.Apply();
         }
     }
 }
