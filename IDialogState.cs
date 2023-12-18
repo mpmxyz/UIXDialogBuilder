@@ -13,6 +13,7 @@ namespace UIXDialogBuilder
         /// <summary>
         /// The dialog this state has been bound to (only required to be assignable once)
         /// </summary>
+        /// <param name="dialog">TODO</param>
         void Bind(Dialog dialog);
 
         /// <summary>

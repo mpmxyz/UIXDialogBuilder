@@ -31,11 +31,14 @@ namespace UIXDialogBuilder
         }
 
         public IDialogElement
-            Create(UIBuilder uiBuilder, T dialogState, Func<(IDictionary<object, string>, IDictionary<object, string>)> onChange, bool inUserspace = false)
+            Create(
+            UIBuilder uiBuilder,
+            T dialogState,
+            Func<(IDictionary<object, string>, IDictionary<object, string>)> onInput,
+            bool inUserspace = false)
         {
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
             if (dialogState == null) throw new ArgumentNullException(nameof(dialogState));
-            //TODO: investigate what onChange is supposed to do
 
             uiBuilder.PushStyle();
             uiBuilder.Style.PreferredHeight = ModInstance.Current.ButtonHeight;

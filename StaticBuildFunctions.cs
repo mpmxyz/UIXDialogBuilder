@@ -2,20 +2,21 @@
 using FrooxEngine;
 using FrooxEngine.UIX;
 using System;
+using System.Globalization;
 using System.Reflection;
 
 namespace UIXDialogBuilder
 {
     internal class StaticBuildFunctions
     {
-        private class MappedValue<I, O> //TODO: ensure that reset works with mapping
+        private class MappedValue<TInner, TOuter> //TODO: ensure that reset works with mapping
         {
-            internal O OValue;
-            internal I IValue
+            internal TOuter Outer;
+            internal TInner Inner
             {
                 get
                 {
-                    if (mapper.TryUnmap(OValue, out var iVal))
+                    if (mapper.TryMapToInner(Outer, out var iVal))
                     {
                         return iVal;
                     }
@@ -26,18 +27,18 @@ namespace UIXDialogBuilder
                 }
                 set
                 {
-                    if (mapper.TryMap(value, out var oVal))
+                    if (mapper.TryMapToOuter(value, out var oVal))
                     {
-                        OValue = oVal;
+                        Outer = oVal;
                     }
                 }
             }
-            private readonly IReversibleMapper<I, O> mapper;
+            private readonly IReversibleMapper<TInner, TOuter> mapper;
 
-            public MappedValue(I value, IReversibleMapper<I, O> mapper)
+            public MappedValue(TInner value, IReversibleMapper<TInner, TOuter> mapper)
             {
                 this.mapper = mapper;
-                this.IValue = value;
+                this.Inner = value;
             }
         }
 
@@ -63,74 +64,50 @@ namespace UIXDialogBuilder
             return result;
         }
 
-        internal static Action BuildEditor(Slot ifieldSlot, object valueObj, FieldInfo prop, Action onChange, UIBuilder uiBuilder, DialogOptionAttribute conf)
+        internal static Action BuildEditorWithMapping<TInner, TOuter>(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<TInner> setInner,
+            Func<TInner> getInner,
+            bool isSecret,
+            string name,
+            ICustomAttributeProvider customAttributes,
+            IReversibleMapper<TInner, TOuter> mapper)
         {
-            if (ifieldSlot == null) throw new ArgumentNullException(nameof(ifieldSlot));
-            if (valueObj == null) throw new ArgumentNullException(nameof(valueObj));
-            if (prop == null) throw new ArgumentNullException(nameof(prop));
-            if (onChange == null) throw new ArgumentNullException(nameof(onChange));
-            if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
-            if (conf == null) throw new ArgumentNullException(nameof(conf));
+            (Action<TOuter> setOuter, Func<TOuter> getOuter) = mapper.Apply(setInner, getInner);
+            return BuildEditor(uiBuilder, iFieldSlot, setOuter, getOuter, isSecret, name, customAttributes);
+        }
 
-            if (conf.ToOutsideWorldMapper != null)
-            {
-                ApplyMapping(conf.ToOutsideWorldMapper, ref valueObj, ref prop, ref onChange);
-            }
-            (IField field, Action reset) = BuildField(ifieldSlot, valueObj, prop, onChange);
+        internal static Action BuildEditor<T>(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<T> setInner,
+            Func<T> getInner,
+            bool isSecret,
+            string name,
+            ICustomAttributeProvider customAttributes)
+        {
+            (FieldInfo fieldInfo, IField field, Action reset) = BuildField(iFieldSlot, setInner, getInner);
             SyncMemberEditorBuilder.Build(
                 field,
                 null,
-                prop,
+                new FieldInfoDecorator(fieldInfo, customAttributes, name),
                 uiBuilder
             );
-            if (conf.Secret && uiBuilder.Current.ChildrenCount > 0)
+            if (isSecret && uiBuilder.Current.ChildrenCount > 0)
             {
                 Slot added = uiBuilder.Current;
                 added.ForeachComponentInChildren<TextField>(textField =>
+                {
+                    var patternField = textField.Text?.MaskPattern;
+                    if (patternField != null)
                     {
-                        var patternField = textField.Text?.MaskPattern;
-                        if (patternField != null)
-                        {
-                            patternField.Value = ModInstance.Current.SecretPatternText;
-                        }
+                        patternField.Value = ModInstance.Current.SecretPatternText;
                     }
+                }
                 );
             }
             return reset;
-        }
-
-        private static void ApplyMapping(Type reversibleMapper, ref object valueObj, ref FieldInfo prop, ref Action onChange)
-        {
-            //save original values to create adapters
-            object originalObj = valueObj;
-            FieldInfo originalProp = prop;
-            Action originalOnChange = onChange;
-
-            //create adapters
-            Type[] mappingTypes = reversibleMapper.GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>));
-            if (mappingTypes == null)
-            {
-                throw new ArgumentException("Expected implementation of " + typeof(IReversibleMapper<,>).Name, nameof(reversibleMapper)); //TODO: move to constructor
-            }
-            Type adaptedType = typeof(MappedValue<,>).MakeGenericType(mappingTypes);
-            FieldInfo adaptedProp = adaptedType.GetField(nameof(MappedValue<object, object>.OValue), BindingFlags.NonPublic | BindingFlags.Instance);
-            PropertyInfo iValueProp = adaptedType.GetProperty(nameof(MappedValue<object, object>.IValue), BindingFlags.NonPublic | BindingFlags.Instance);
-            object mapperInstance = reversibleMapper.GetConstructor(Array.Empty<Type>()).Invoke(Array.Empty<object>());
-            object adaptedObj = adaptedType
-                .GetConstructor(new Type[] { mappingTypes[0], typeof(IReversibleMapper<,>).MakeGenericType(mappingTypes) })
-                .Invoke(new object[] { originalProp.GetValue(originalObj), mapperInstance });
-            void adaptedOnChange()
-            {
-                object newValue = iValueProp.GetValue(adaptedObj);
-                UniLog.Log(newValue);
-                originalProp.SetValue(originalObj, newValue);
-                originalOnChange();
-            }
-
-            //replace original values with adapters
-            valueObj = adaptedObj;
-            prop = adaptedProp;
-            onChange = adaptedOnChange;
         }
 
         internal static void BuildSecretButton(UIBuilder uiBuilder, Action onClick)
@@ -142,63 +119,112 @@ namespace UIXDialogBuilder
             };
         }
 
-        private static (IField field, Action reset) BuildField(Slot ifieldSlot, object valueObj, FieldInfo prop, Action onChange)
+        private static (FieldInfo fieldInfo, IField field, Action reset) BuildField<T>(Slot iFieldSlot, Action<T> setInner, Func<T> getInner)
         {
-            return ((IField field, Action reset))FieldBuilder(prop)
-                ?.Invoke(null, new object[] { ifieldSlot, valueObj, prop, onChange });
+            return ((FieldInfo fieldInfo, IField field, Action reset)) FieldBuilder(typeof(T)).Invoke(null, new object[] { iFieldSlot, setInner, getInner });
         }
 
-        private static MethodInfo FieldBuilder(FieldInfo prop)
+        private static MethodInfo FieldBuilder(Type type)
         {
             const BindingFlags FLAGS = BindingFlags.NonPublic | BindingFlags.Static;
-            if (typeof(IWorldElement).IsAssignableFrom(prop.FieldType))
+            if (typeof(IWorldElement).IsAssignableFrom(type))
             {
                 return typeof(StaticBuildFunctions)
-                    .GetGenericMethod(nameof(BuildReferenceField), FLAGS, prop.FieldType);
+                    .GetGenericMethod(nameof(BuildReferenceField), FLAGS, type);
             }
             else
             {
                 return typeof(StaticBuildFunctions)
-                    .GetGenericMethod(nameof(BuildValueField), FLAGS, prop.FieldType);
+                    .GetGenericMethod(nameof(BuildValueField), FLAGS, type);
             }
         }
 
-        private static (IField field, Action reset) BuildReferenceField<V>(Slot slot, object obj, FieldInfo prop, Action onChange) where V : class, IWorldElement
+        private static (FieldInfo fieldInfo, IField field, Action reset) BuildReferenceField<T>(Slot slot, Action<T> setInner, Func<T> getInner) where T : class, IWorldElement
         {
-            var value = slot.AttachComponent<ReferenceField<V>>().Reference;
+            var value = slot.AttachComponent<ReferenceField<T>>().Reference;
 
             void reset()
             {
-                value.Target = (V)prop.GetValue(obj);
+                value.Target = getInner();
             }
 
             reset();
             value.OnTargetChange += (x) =>
             {
-                prop.SetValue(obj, x.Target);
-                onChange();
+                setInner(x);
             };
-            return (value, reset);
+
+            return (typeof(ReferenceField<T>).GetField(nameof(ReferenceField<T>.Reference)), value, reset);
         }
 
-        private static (IField field, Action reset) BuildValueField<V>(Slot slot, object obj, FieldInfo prop, Action onChange)
+        private static (FieldInfo fieldInfo, IField field, Action reset) BuildValueField<T>(Slot slot, Action<T> setInner, Func<T> getInner)
         {
-            var value = slot.AttachComponent<ValueField<V>>().Value;
+            var value = slot.AttachComponent<ValueField<T>>().Value;
 
             void reset()
             {
-                value.Value = (V)prop.GetValue(obj);
+                value.Value = getInner();
             }
 
             reset();
             value.OnValueChange += (x) =>
             {
-                prop.SetValue(obj, x.Value);
-                onChange();
+                setInner(x);
             };
-            return (value, reset);
+
+            return (typeof(ValueField<T>).GetField(nameof(ValueField<T>.Value)), value, reset);
         }
 
+        private class FieldInfoDecorator : FieldInfo
+        {
+            private readonly FieldInfo field;
+            private readonly ICustomAttributeProvider customAttributes;
+            private readonly string name;
 
+            public FieldInfoDecorator(FieldInfo field, ICustomAttributeProvider customAttributes, string name)
+            {
+                this.field = field;
+                this.customAttributes = customAttributes;
+                this.name = name;
+            }
+
+            public override RuntimeFieldHandle FieldHandle => field.FieldHandle;
+
+            public override Type FieldType => field.FieldType;
+
+            public override FieldAttributes Attributes => field.Attributes;
+
+            public override string Name => name;
+
+            public override Type DeclaringType => field.DeclaringType;
+
+            public override Type ReflectedType => field.ReflectedType;
+
+            public override object[] GetCustomAttributes(bool inherit)
+            {
+                return customAttributes.GetCustomAttributes(inherit);
+            }
+
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+            {
+                return customAttributes.GetCustomAttributes(attributeType, inherit);
+            }
+
+            public override object GetValue(object obj)
+            {
+                return field.GetValue(obj);
+            }
+
+            public override bool IsDefined(Type attributeType, bool inherit)
+            {
+                return customAttributes.IsDefined(attributeType, inherit);
+            }
+
+            public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+            {
+                field.SetValue(obj, value, invokeAttr, binder, culture);
+            }
+        }
     }
+
 }

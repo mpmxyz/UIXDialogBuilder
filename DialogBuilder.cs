@@ -4,6 +4,9 @@ using FrooxEngine.UIX;
 using System.Reflection;
 using System;
 using Elements.Core;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators;
+using FrooxEngine.ProtoFlux;
 
 namespace UIXDialogBuilder
 {
@@ -111,11 +114,11 @@ namespace UIXDialogBuilder
             var genType = typeof(DialogOptionDefinition<,>).MakeGenericType(typeof(T), fieldInfo.FieldType);
             var cons = genType.GetConstructor(
                     new Type[] {
-                        typeof(DialogOptionAttribute),
-                        typeof(FieldInfo)
+                        typeof(FieldInfo),
+                        typeof(DialogOptionAttribute)
                     }
                 );
-            var field = (IDialogEntryDefinition<T>)cons.Invoke(new object[] { conf, fieldInfo });
+            var field = (IDialogEntryDefinition<T>)cons.Invoke(new object[] { fieldInfo, conf });
             return AddEntry(field);
         }
 
@@ -217,23 +220,38 @@ namespace UIXDialogBuilder
             var slot = world.AddSlot(title, persistent: false);
             //TODO: adjust to return dialog instance and window slot (combined in DialogWindow?
             //)
+            var uiBuilder = RadiantUI_Panel.SetupPanel(slot, title, ModInstance.Current.CanvasSize);
+            var scale = ModInstance.Current.UnitScale;
+            slot.GlobalScale = new float3(scale, scale, scale);
 
-            var panel = slot.AttachComponent<LegacyCanvasPanel>();
-            panel.Panel.Title = title;
-            panel.Panel.AddCloseButton();
-            panel.CanvasSize = ModInstance.Current.CanvasSize;
-            panel.CanvasScale = ModInstance.Current.ConfigPanelHeight / panel.CanvasSize.y;
-
-            var uiBuilder = new UIBuilder(panel.Canvas);
-
+            //uiBuilder.Style.ForceExpandWidth = false;
+            uiBuilder.Style.ForceExpandHeight = false;
             uiBuilder.ScrollArea();
             uiBuilder.VerticalLayout(ModInstance.Current.Spacing);                      //problem: cannot measure size here
             var content = uiBuilder.VerticalLayout(ModInstance.Current.Spacing).Slot;   //solution: extra layer for content
+            
             uiBuilder.FitContent(SizeFit.Disabled, SizeFit.PreferredSize); //TODO: clamp to max-size
             BuildInPlace(uiBuilder, dialog);
 
-            var sizeDriver = content.AttachComponent<RectSizeDriver>();
-            sizeDriver.TargetSize.Target = panel.Canvas.Size;
+            var offsetFlux = slot.AddSlot("CanvasSizeDriver");
+            var contentSizeDriver = content.AttachComponent<RectSizeDriver>();
+            var contentSize = offsetFlux.AttachComponent<ValueField<float2>>();
+            var offset = offsetFlux.AttachComponent<ValueInput<float2>>();
+            offset.Value.Value = new float2(32, 120);
+            contentSize.Value.Value = uiBuilder.Canvas.Size - offset.Value.Value;
+            contentSizeDriver.TargetSize.Target = contentSize.Value;
+            var add = offsetFlux.AttachComponent<ValueAdd<float2>>();
+            var contentSizeSource = offsetFlux.AttachComponent<FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes.ValueSource<float2>>();
+            var contentSizeReference = offsetFlux.AttachComponent<GlobalReference<IValue<float2>>>();
+            contentSizeSource.Source.Target = contentSizeReference;
+            contentSizeReference.Reference.Target = contentSize.Value;
+            add.A.Target = contentSizeSource;
+            add.B.Target = offset;
+            var canvasSizeDriver = offsetFlux.AttachComponent<FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes.ValueFieldDrive<float2>>();
+            canvasSizeDriver.Value.Target = add;
+            var canvasSizeProxy = offsetFlux.AttachComponent<FrooxEngine.ProtoFlux.CoreNodes.FieldDriveBase<float2>.Proxy>();
+            canvasSizeProxy.Node.Target = canvasSizeDriver;
+            canvasSizeProxy.Drive.Target = uiBuilder.Canvas.Size;
 
             slot.PositionInFrontOfUser(float3.Backward);
 

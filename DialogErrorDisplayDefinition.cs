@@ -29,11 +29,15 @@ namespace UIXDialogBuilder
         }
 
         public IDialogElement
-            Create(UIBuilder uiBuilder, T dialogState, Func<(IDictionary<object, string>, IDictionary<object, string>)> onChange, bool inUserspace = false)
+            Create(
+            UIBuilder uiBuilder,
+            T dialogState,
+            Func<(IDictionary<object, string>, IDictionary<object, string>)> onInput,
+            bool inUserspace = false)
         {
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
             if (dialogState == null) throw new ArgumentNullException(nameof(dialogState));
-            if (onChange == null) throw new ArgumentNullException(nameof(onChange));
+            if (onInput == null) throw new ArgumentNullException(nameof(onInput));
 
             uiBuilder.PushStyle();
             uiBuilder.Style.PreferredHeight = ModInstance.Current.ErrorHeight * nLines;

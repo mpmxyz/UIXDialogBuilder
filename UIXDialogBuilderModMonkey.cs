@@ -18,10 +18,10 @@ namespace UIXDialogBuilder
         public string OpenSecretEditorTitle => DefaultConfigs.OpenSecretEditorTitle;
         public string SecretEditorAcceptText => DefaultConfigs.SecretEditorAcceptText;
         public string SecretPatternText => DefaultConfigs.SecretPatternText;
-        public float ConfigPanelHeight => DefaultConfigs.ConfigPanelHeight;
         public float Spacing => DefaultConfigs.Spacing;
         public float ButtonHeight => DefaultConfigs.ButtonHeight;
         public float ErrorHeight => DefaultConfigs.ErrorHeight;
+        public float UnitScale => DefaultConfigs.UnitScale;
         public float2 CanvasSize => DefaultConfigs.CanvasSize;
 
 

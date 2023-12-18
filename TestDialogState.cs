@@ -4,17 +4,16 @@ using System.Collections.Generic;
 
 namespace UIXDialogBuilder
 {
-
     /// <summary>
     /// This class demonstrates how to use the library.
     /// </summary>
     internal class TestDialogState : IDialogState
     {
-        private class ListMapper : IReversibleMapper<List<string>, string>
+        private class ListMapper : ReversibleMapperBase<List<string>, string>
         {
             public ListMapper() { }
 
-            public bool TryMap(List<string> value, out string mapped)
+            public override bool TryMapToOuter(List<string> value, out string mapped)
             {
                 if (value == null)
                 {
@@ -38,7 +37,7 @@ namespace UIXDialogBuilder
                 return true;
             }
 
-            public bool TryUnmap(string value, out List<string> unmapped)
+            public override bool TryMapToInner(string value, out List<string> unmapped)
             {
                 unmapped = value != null ? new List<string>(value.Split(',')) : null;
                 return true;

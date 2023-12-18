@@ -14,6 +14,24 @@ namespace UIXDialogBuilder
         public bool ShowErrors { get; }
         public Type ToOutsideWorldMapper { get; }
 
+        public IReversibleMapper CreateMapper(object valueOwner)
+        {
+            if (valueOwner == null) throw new ArgumentNullException(nameof(valueOwner));
+            if (ToOutsideWorldMapper == null)
+            {
+                return null;
+            }
+            return (IReversibleMapper) ToOutsideWorldMapper.GetConstructor(new Type[] { valueOwner.GetType() })?.Invoke(new object[] { valueOwner })
+                ?? (IReversibleMapper) ToOutsideWorldMapper.GetConstructor(Type.EmptyTypes)?.Invoke(Array.Empty<object>())
+                ?? throw new InvalidOperationException($"{ToOutsideWorldMapper} lacks constructor with no argument or one matching type {valueOwner.GetType()}!");
+        }
+
+        public bool HasMapperFor(Type ownerType)
+        {
+            return (ToOutsideWorldMapper.GetConstructor(new Type[] { ownerType }) != null
+                || ToOutsideWorldMapper.GetConstructor(Type.EmptyTypes) != null);
+        }
+
         /// <summary>
         /// Creates an option line in the dialog
         /// </summary>
@@ -29,7 +47,7 @@ namespace UIXDialogBuilder
             ToOutsideWorldMapper = toOutsideWorldMapper;
             if (ToOutsideWorldMapper != null && ToOutsideWorldMapper.GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>)) == null)
             {
-                throw new ArgumentException(nameof(ToOutsideWorldMapper));
+                throw new ArgumentException($"Mapper does not implement {typeof(IReversibleMapper<,>)}!", nameof(toOutsideWorldMapper));
             }
         }
     }

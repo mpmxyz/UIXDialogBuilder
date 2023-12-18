@@ -23,7 +23,7 @@ namespace UIXDialogBuilder
         (
             UIBuilder uiBuilder,
             T dialogState,
-            Func<(IDictionary<object, string>, IDictionary<object, string>)> onChange,
+            Func<(IDictionary<object, string>, IDictionary<object, string>)> onInput,
             bool inUserspace = false
         );
     }
