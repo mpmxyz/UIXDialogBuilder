@@ -7,10 +7,10 @@ namespace UIXDialogBuilder
     /// <summary>
     /// Defines a line of horizontally arranged sub-elements
     /// </summary>
-    /// <typeparam name="T">type of the dialog object</typeparam>
-    public class DialogLineDefinition<T> : IDialogEntryDefinition<T> where T : IDialogState
+    /// <typeparam name="TDialogState">type of the dialog object</typeparam>
+    public class DialogLineDefinition<TDialogState> : IDialogEntryDefinition<TDialogState> where TDialogState : IDialogState
     {
-        private readonly IEnumerable<IDialogEntryDefinition<T>> _Elements;
+        private readonly IEnumerable<IDialogEntryDefinition<TDialogState>> _Elements;
         private readonly object _Key;
 
         /// <summary>
@@ -18,7 +18,7 @@ namespace UIXDialogBuilder
         /// </summary>
         /// <param name="key"></param>
         /// <param name="elements"></param>
-        public DialogLineDefinition(object key, IEnumerable<IDialogEntryDefinition<T>> elements)
+        public DialogLineDefinition(object key, IEnumerable<IDialogEntryDefinition<TDialogState>> elements)
         {
             _Key = key;
             _Elements = elements;
@@ -27,8 +27,8 @@ namespace UIXDialogBuilder
         public IDialogElement
             Create(
             UIBuilder uiBuilder,
-            T dialogState,
-            Func<(IDictionary<object, string>, IDictionary<object, string>)> onInput,
+            TDialogState dialogState,
+            Action<object> onInput,
             bool inUserspace = false)
         {
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));

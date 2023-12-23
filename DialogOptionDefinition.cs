@@ -49,7 +49,8 @@ namespace UIXDialogBuilder
                 {
                     throw new ArgumentException($"Type argument TInner of mapper {conf.ToOutsideWorldMapper} does not match type of value!", nameof(conf));
                 }
-                if (!conf.HasMapperFor(typeof(TDialogState))) {
+                if (!conf.HasMapperFor(typeof(TDialogState)))
+                {
                     throw new ArgumentException($"Mapper {conf.ToOutsideWorldMapper} does not have a no-arg or single arg constructor matching {typeof(TDialogState)}!", nameof(conf));
                 }
             }
@@ -96,7 +97,7 @@ namespace UIXDialogBuilder
             Create(
             UIBuilder uiBuilder,
             TDialogState dialogState,
-            Func<(IDictionary<object, string>, IDictionary<object, string>)> onInput,
+            Action<object> onInput,
             bool inUserspace = false)
         {
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
@@ -105,46 +106,48 @@ namespace UIXDialogBuilder
 
             var slot = uiBuilder.VerticalLayout(spacing: ModInstance.Current.Spacing / 2).Slot;
             IValue<string> errorTextContent;
-            Action reset = StaticBuildFunctions.BuildLineWithLabel(conf.Name, uiBuilder, (uiBuilder2) =>
+            Action reset;
+            Action<IDictionary<object, string>, IDictionary<object, string>> setSecretError;
+            (reset, setSecretError) = StaticBuildFunctions.BuildLineWithLabel<(Action, Action<IDictionary<object, string>, IDictionary<object, string>>)>(
+                conf.Name, uiBuilder, (uiBuilder2) =>
             {
                 if (conf.Secret && !inUserspace)
                 {
-                    //TODO: ensure proper reset functionality
-                    var secretDialog = new SecretDialog(this, dialogState, onInput);
+                    var secretDialog = new SecretDialog(this.conf.Name, this, dialogState, onInput);
                     StaticBuildFunctions.BuildSecretButton(uiBuilder2, () => secretDialog.Open());
-                    return secretDialog.Reset;
+                    return (secretDialog.Reset, secretDialog.DisplayError);
                 }
                 else
                 {
                     var mapper = conf.CreateMapper(dialogState);
                     if (mapper == null)
                     {
-                        return StaticBuildFunctions.BuildEditor(
+                        return (StaticBuildFunctions.BuildEditor(
                             uiBuilder2,
                             uiBuilder2.Root,
-                            (x) => { setter(dialogState, x); onInput(); },
+                            (x) => { setter(dialogState, x); onInput(key); },
                             () => getter(dialogState),
                             conf.Secret,
                             conf.Name,
                             customAttributes
-                        );
+                        ), null);
                     }
                     else
                     {
-                        return (Action) typeof(StaticBuildFunctions).GetGenericMethod(
+                        return ((Action)typeof(StaticBuildFunctions).GetGenericMethod(
                             nameof(StaticBuildFunctions.BuildEditorWithMapping),
                             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
                             mapper.GetType().GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>))
                         ).Invoke(null, new object[]{
                             uiBuilder2,
                             uiBuilder2.Root,
-                            (Action<TValue>) ((x) => { setter(dialogState, x); onInput(); }),
+                            (Action<TValue>) ((x) => { setter(dialogState, x); onInput(key); }),
                             (Func<TValue>)(() => getter(dialogState)),
                             conf.Secret,
                             conf.Name,
                             customAttributes,
                             mapper
-                        });
+                        }), null);
                     }
                 }
             });
@@ -154,6 +157,7 @@ namespace UIXDialogBuilder
                 uiBuilder.PushStyle();
                 uiBuilder.Style.PreferredHeight = ModInstance.Current.ErrorHeight;
                 uiBuilder.Style.TextColor = colorX.Red;
+
                 var errorText = uiBuilder.Text("", alignment: Alignment.TopRight);
                 uiBuilder.PopStyle();
                 uiBuilder.NestOut();
@@ -163,21 +167,30 @@ namespace UIXDialogBuilder
             {
                 errorTextContent = null;
             }
-            return new Element(key, slot, errorTextContent, reset);
+            return new Element(key, slot, (allErrors, unbound) =>
+            {
+                setSecretError?.Invoke(allErrors, unbound);
+                if (errorTextContent != null)
+                {
+                    errorTextContent.Value = allErrors.TryGetValue(key, out var error)
+                                    ? $"<b>{error}</b>"
+                                    : "";
+                }
+            }, reset);
         }
 
         private class Element : DialogElementBase
         {
             private readonly object _Key;
             private readonly Slot _Slot;
-            private readonly IValue<string> _ErrorField;
+            private readonly Action<IDictionary<object, string>, IDictionary<object, string>> _DisplayErrors;
             private readonly Action _Reset;
 
-            public Element(object key, Slot slot, IValue<string> errorField, Action reset)
+            public Element(object key, Slot slot, Action<IDictionary<object, string>, IDictionary<object, string>> displayErrors, Action reset)
             {
                 _Key = key;
                 _Slot = slot;
-                _ErrorField = errorField;
+                _DisplayErrors = displayErrors;
                 _Reset = reset;
             }
 
@@ -197,12 +210,7 @@ namespace UIXDialogBuilder
 
             public override void DisplayErrors(IDictionary<object, string> allErrors, IDictionary<object, string> unboundErrors)
             {
-                if (_ErrorField != null)
-                {
-                    _ErrorField.Value = allErrors.TryGetValue(_Key, out var error)
-                                    ? $"<b>{error}</b>"
-                                    : "";
-                }
+                _DisplayErrors?.Invoke(allErrors, unboundErrors);
             }
 
             public override void Reset()
@@ -218,21 +226,21 @@ namespace UIXDialogBuilder
         {
             private readonly DialogBuilder<TDialogState> dialogBuilder;
             private readonly string title;
-            private readonly TDialogState dialog;
+            private readonly TDialogState dialogState;
             private Slot slot;
+            private Dialog dialog;
 
-            public SecretDialog(DialogOptionDefinition<TDialogState, TValue> option, TDialogState dialog, Func<(IDictionary<object, string>, IDictionary<object, string>)> onChangeSource)
+            public SecretDialog(string title, IDialogEntryDefinition<TDialogState> option, TDialogState dialogState, Action<object> onInput)
             {
-                //TODO: Dialog binding to IDialogState must be adjusted to cater for popups like this (potential target: condition/config in builder)
-                this.dialogBuilder = new DialogBuilder<TDialogState>(addDefaults: false, overrideUpdateAndValidate: (_) => onChangeSource())
+                this.dialogBuilder = new DialogBuilder<TDialogState>(addDefaults: false, onInput)
                         .AddEntry(option)
                         .AddEntry(new DialogActionDefinition<TDialogState>(
                             null,
                             new DialogActionAttribute(ModInstance.Current.SecretEditorAcceptText, onlyValidating: Array.Empty<object>()),
                             (x) => Close()
                             ));
-                this.title = option.conf.Name;
-                this.dialog = dialog;
+                this.title = title;
+                this.dialogState = dialogState;
             }
 
             public void Open()
@@ -240,7 +248,7 @@ namespace UIXDialogBuilder
                 Userspace.UserspaceWorld.RunSynchronously(() =>
                 {
                     slot?.Destroy();
-                    slot = dialogBuilder.BuildWindow(title, Userspace.UserspaceWorld, dialog);
+                    (dialog, slot) = dialogBuilder.BuildWindow(title, Userspace.UserspaceWorld, dialogState, dialogState.Dialog);
                     var editor = slot.GetComponentInChildren<TextEditor>();
                     editor?.Focus();
                 });
@@ -252,12 +260,24 @@ namespace UIXDialogBuilder
                 {
                     slot?.Destroy();
                     slot = null;
+                    dialog = null;
                 });
             }
 
             public void Reset()
             {
-                UniLog.Warning("TODO: Reset " + this);
+                Userspace.UserspaceWorld.RunSynchronously(() =>
+                {
+                    dialog?.Reset();
+                });
+            }
+
+            internal void DisplayError(IDictionary<object, string> allErrors, IDictionary<object, string> unboundErrors)
+            {
+                Userspace.UserspaceWorld.RunSynchronously(() =>
+                {
+                    dialog?.DisplayErrors(allErrors, unboundErrors);
+                });
             }
         }
     }

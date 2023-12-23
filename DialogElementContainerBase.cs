@@ -35,7 +35,7 @@ namespace UIXDialogBuilder
 
         public override void Reset()
         {
-
+            //noop for *this*
         }
 
         public override void DisplayErrors(IDictionary<object, string> allErrors, IDictionary<object, string> unboundErrors)
@@ -147,6 +147,7 @@ namespace UIXDialogBuilder
                 element.ResetAll();
             }
         }
+
         public override void Reset(IEnumerable<object> keys)
         {
             keys = OptimizeLookup(keys);
@@ -156,7 +157,6 @@ namespace UIXDialogBuilder
                 element.Reset(keys);
             }
         }
-
 
         private static ISet<object> OptimizeLookup(IEnumerable<object> keys)
         {

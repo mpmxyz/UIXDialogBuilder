@@ -45,21 +45,30 @@ namespace UIXDialogBuilder
         internal static T BuildLineWithLabel<T>(string label, UIBuilder uiBuilder, Func<UIBuilder, T> contentGen)
         {
             uiBuilder.PushStyle();
-            uiBuilder.Style.MinHeight = 24f;
-            uiBuilder.Panel();
 
-            Text text2 = uiBuilder.Text(label + ":", bestFit: true, Alignment.MiddleLeft, parseRTF: false);
-            text2.Color.Value = colorX.Black;
+            uiBuilder.Style.MinHeight = ModInstance.Current.LineHeight;
+            uiBuilder.HorizontalLayout(4f);
+
+            uiBuilder.Style.FlexibleWidth = 0.25f;
+            uiBuilder.Style.PreferredWidth = 0f;
+            uiBuilder.Style.MinWidth = 0f;
+            uiBuilder.Style.UseZeroMetrics = true;
+
+            uiBuilder.Style.TextAutoSizeMax = ModInstance.Current.LineHeight;
+            uiBuilder.Style.PreferredHeight = ModInstance.Current.LineHeight;
+            uiBuilder.Text(label + ":", bestFit: true, Alignment.MiddleLeft, parseRTF: false);
             uiBuilder.CurrentRect.AnchorMax.Value = new float2(0.25f, 1f);
 
-            var rect = uiBuilder.Panel();
+            uiBuilder.Style.PreferredHeight = -1f;
+            uiBuilder.Style.FlexibleWidth = 0.75f;
+            uiBuilder.HorizontalLayout();
 
-            rect.AnchorMin.Value = new float2(0.25f, 0f);
+            uiBuilder.PopStyle();
+
             var result = contentGen(uiBuilder);
 
             uiBuilder.NestOut();
             uiBuilder.NestOut();
-            uiBuilder.PopStyle();
 
             return result;
         }
@@ -112,16 +121,19 @@ namespace UIXDialogBuilder
 
         internal static void BuildSecretButton(UIBuilder uiBuilder, Action onClick)
         {
+            uiBuilder.PushStyle();
+            uiBuilder.Style.MinHeight = ModInstance.Current.LineHeight;
             Button button = uiBuilder.Button(ModInstance.Current.OpenSecretEditorTitle);
             button.LocalPressed += (b, d) =>
             {
                 onClick();
             };
+            uiBuilder.PopStyle();
         }
 
         private static (FieldInfo fieldInfo, IField field, Action reset) BuildField<T>(Slot iFieldSlot, Action<T> setInner, Func<T> getInner)
         {
-            return ((FieldInfo fieldInfo, IField field, Action reset)) FieldBuilder(typeof(T)).Invoke(null, new object[] { iFieldSlot, setInner, getInner });
+            return ((FieldInfo fieldInfo, IField field, Action reset))FieldBuilder(typeof(T)).Invoke(null, new object[] { iFieldSlot, setInner, getInner });
         }
 
         private static MethodInfo FieldBuilder(Type type)

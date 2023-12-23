@@ -7,6 +7,8 @@ using Elements.Core;
 using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes;
 using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Operators;
 using FrooxEngine.ProtoFlux;
+using FrooxEngine.Undo;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.Math;
 
 namespace UIXDialogBuilder
 {
@@ -15,18 +17,17 @@ namespace UIXDialogBuilder
     /// To be exact this class starts its life as a builder where you can add defaults or custom elements to define a dialog.
     /// Then you can use it as a factory to produce new UIX windows from objects representing your custom dialog.
     /// </summary>
-    /// <typeparam name="T">expected dialog object type</typeparam>
-    public partial class DialogBuilder<T> where T : IDialogState
+    /// <typeparam name="TDialogState">expected dialog object type</typeparam>
+    public partial class DialogBuilder<TDialogState> where TDialogState : IDialogState
     {
-        private readonly List<IDialogEntryDefinition<T>> definitions = new List<IDialogEntryDefinition<T>>();
-        private readonly Func<T, (IDictionary<object, string>, IDictionary<object, string>)> overrideUpdateAndValidate;
+        private readonly List<IDialogEntryDefinition<TDialogState>> definitions = new List<IDialogEntryDefinition<TDialogState>>();
+        private readonly Action<object> onInputOverride;
 
         /// <summary>
         /// Creates a dialog builder that can be configured to create dialog windows.
         /// </summary>
-        /// <param name="addDefaults">creates a list of options, an output for errors and a line with buttons based on <typeparamref name="T"/>'s attributes</param>
-        /// <param name="overrideUpdateAndValidate">replaces the default validation if not null</param>
-        public DialogBuilder(bool addDefaults = true, Func<T, (IDictionary<object, string>, IDictionary<object, string>)> overrideUpdateAndValidate = null)
+        /// <param name="addDefaults">creates a list of options, an output for errors and a line with buttons based on <typeparamref name="TDialogState"/>'s attributes</param>
+        public DialogBuilder(bool addDefaults = true, Action<object> onInputOverride = null)
         {
             if (addDefaults)
             {
@@ -35,52 +36,58 @@ namespace UIXDialogBuilder
                 AddAllActions();
             }
 
-            this.overrideUpdateAndValidate = overrideUpdateAndValidate;
+            this.onInputOverride = onInputOverride;
         }
 
         /// <summary>
         /// Adds a line to the dialog configuration
         /// </summary>
-        /// <param name="optionField">object that will generate UI for an instance of <typeparamref name="T"/></param>
+        /// <param name="optionField">object that will generate UI for an instance of <typeparamref name="TDialogState"/></param>
         /// <returns>this</returns>
-        public DialogBuilder<T> AddEntry(IDialogEntryDefinition<T> optionField)
+        public DialogBuilder<TDialogState> AddEntry(IDialogEntryDefinition<TDialogState> optionField)
         {
             definitions.Add(optionField);
             return this;
         }
 
         /// <summary>
-        /// Adds a line for each of <typeparamref name="T"/>'s attributes annotated with <see cref="DialogOptionAttribute"/>
+        /// Adds a line for each of <typeparamref name="TDialogState"/>'s attributes annotated with <see cref="DialogOptionAttribute"/>
         /// </summary>
         /// <returns>this</returns>
-        public DialogBuilder<T> AddAllOptions()
+        public DialogBuilder<TDialogState> AddAllOptions()
         {
-            var converterType = typeof(T);
+            var dialogStateType = typeof(TDialogState);
 
-            foreach (var fieldInfo in converterType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            foreach (var fieldInfo in dialogStateType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                foreach (var attr in fieldInfo.GetCustomAttributes(true))
+                var conf = fieldInfo.GetCustomAttribute<DialogOptionAttribute>();
+                if (conf != null)
                 {
-                    if (attr is DialogOptionAttribute conf)
-                    {
-                        AddOption(conf, fieldInfo);
-                        break;
-                    }
+                    AddOption(fieldInfo, conf);
+                }
+            }
+            foreach (var propInfo in dialogStateType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                var conf = propInfo.GetCustomAttribute<DialogOptionAttribute>();
+                if (conf != null)
+                {
+                    AddOption(propInfo, conf);
                 }
             }
             return this;
         }
 
         /// <summary>
-        /// Adds a line with one button for each of <typeparamref name="T"/>'s attributes annotated with <see cref="DialogActionAttribute"/>
+        /// Adds a line with one button for each of <typeparamref name="TDialogState"/>'s attributes annotated with <see cref="DialogActionAttribute"/>
         /// </summary>
         /// <returns>this</returns>
         /// <exception cref="InvalidOperationException">If an annotated method has arguments.</exception>
-        public DialogBuilder<T> AddAllActions()
+        public DialogBuilder<TDialogState> AddAllActions()
         {
-            var converterType = typeof(T);
-            var actions = new List<DialogActionDefinition<T>>();
-            foreach (var methodInfo in converterType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            var dialogStateType = typeof(TDialogState);
+
+            var actions = new List<DialogActionDefinition<TDialogState>>();
+            foreach (var methodInfo in dialogStateType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 foreach (var attr in methodInfo.GetCustomAttributes(true))
                 {
@@ -90,7 +97,7 @@ namespace UIXDialogBuilder
                         {
                             throw new InvalidOperationException($"DialogAction '{methodInfo.Name}' must have no arguments!");
                         }
-                        actions.Add(new DialogActionDefinition<T>(methodInfo.Name, conf, (dialog) => methodInfo.Invoke(dialog, Array.Empty<object>())));
+                        actions.Add(new DialogActionDefinition<TDialogState>(methodInfo.Name, conf, (dialog) => methodInfo.Invoke(dialog, Array.Empty<object>())));
                         break;
                     }
                 }
@@ -104,21 +111,51 @@ namespace UIXDialogBuilder
         /// Adds a line with an editable value
         /// </summary>
         /// <param name="conf">displayed name, secrecy and error output options</param>
-        /// <param name="fieldInfo">field of <typeparamref name="T"/> which will be edited</param>
+        /// <param name="fieldInfo">field of <typeparamref name="TDialogState"/> which will be edited</param>
         /// <returns>this</returns>
-        public DialogBuilder<T> AddOption(DialogOptionAttribute conf, FieldInfo fieldInfo)
+        public DialogBuilder<TDialogState> AddOption(FieldInfo fieldInfo, DialogOptionAttribute conf)
         {
             if (conf == null) throw new ArgumentNullException(nameof(conf));
             if (fieldInfo == null) throw new ArgumentNullException(nameof(fieldInfo));
+            if (!fieldInfo.DeclaringType.IsAssignableFrom(typeof(TDialogState)))
+            {
+                throw new ArgumentException($"Field {fieldInfo.Name} must be part of {typeof(TDialogState)}!", nameof(fieldInfo));
+            }
 
-            var genType = typeof(DialogOptionDefinition<,>).MakeGenericType(typeof(T), fieldInfo.FieldType);
+            var genType = typeof(DialogOptionDefinition<,>).MakeGenericType(typeof(TDialogState), fieldInfo.FieldType);
             var cons = genType.GetConstructor(
                     new Type[] {
                         typeof(FieldInfo),
                         typeof(DialogOptionAttribute)
                     }
                 );
-            var field = (IDialogEntryDefinition<T>)cons.Invoke(new object[] { fieldInfo, conf });
+            var field = (IDialogEntryDefinition<TDialogState>)cons.Invoke(new object[] { fieldInfo, conf });
+            return AddEntry(field);
+        }
+
+        /// <summary>
+        /// Adds a line with an editable value
+        /// </summary>
+        /// <param name="conf">displayed name, secrecy and error output options</param>
+        /// <param name="propInfo">property of <typeparamref name="TDialogState"/> which will be edited</param>
+        /// <returns>this</returns>
+        public DialogBuilder<TDialogState> AddOption(PropertyInfo propInfo, DialogOptionAttribute conf)
+        {
+            if (conf == null) throw new ArgumentNullException(nameof(conf));
+            if (propInfo == null) throw new ArgumentNullException(nameof(propInfo));
+            if (!propInfo.DeclaringType.IsAssignableFrom(typeof(TDialogState)))
+            {
+                throw new ArgumentException($"Property {propInfo.Name} must be part of {typeof(TDialogState)}!", nameof(propInfo));
+            }
+
+            var genType = typeof(DialogOptionDefinition<,>).MakeGenericType(typeof(TDialogState), propInfo.PropertyType);
+            var cons = genType.GetConstructor(
+                    new Type[] {
+                        typeof(FieldInfo),
+                        typeof(DialogOptionAttribute)
+                    }
+                );
+            var field = (IDialogEntryDefinition<TDialogState>)cons.Invoke(new object[] { propInfo, conf });
             return AddEntry(field);
         }
 
@@ -127,9 +164,9 @@ namespace UIXDialogBuilder
         /// </summary>
         /// <param name="elements">Elements that will be placed in a single line.</param>
         /// <returns>this</returns>
-        public DialogBuilder<T> AddLine(object key, IEnumerable<IDialogEntryDefinition<T>> elements)
+        public DialogBuilder<TDialogState> AddLine(object key, IEnumerable<IDialogEntryDefinition<TDialogState>> elements)
         {
-            AddEntry(new DialogLineDefinition<T>(key, elements));
+            AddEntry(new DialogLineDefinition<TDialogState>(key, elements));
             return this;
         }
 
@@ -137,9 +174,9 @@ namespace UIXDialogBuilder
         /// Creates a text output that shows a list of all errors that are not displayed directly on the problematic input.
         /// </summary>
         /// <returns>this</returns>
-        public DialogBuilder<T> AddUnboundErrorDisplay()
+        public DialogBuilder<TDialogState> AddUnboundErrorDisplay(object key = null, int nLines = 2)
         {
-            AddEntry(new DialogErrorDisplayDefinition<T>(null, onlyUnbound: true));
+            AddEntry(new DialogErrorDisplayDefinition<TDialogState>(key, onlyUnbound: true, nLines: nLines));
             return this;
         }
 
@@ -147,34 +184,34 @@ namespace UIXDialogBuilder
         /// Adds the dialog UI to whereever the <paramref name="uiBuilder"/> is currently at
         /// </summary>
         /// <param name="uiBuilder">used to build the UI</param>
-        /// <param name="dialog">object that will be configured by the UI</param>
-        public void BuildInPlace(UIBuilder uiBuilder, T dialog)
+        /// <param name="dialogState">object that will be configured by the UI</param>
+        /// <param name="parent">parent dialog</param>
+        public Dialog BuildInPlace(UIBuilder uiBuilder, TDialogState dialogState, Dialog parent = null)
         {
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
-            if (dialog == null) throw new ArgumentNullException(nameof(dialog));
+            if (dialogState == null) throw new ArgumentNullException(nameof(dialogState));
+
+            var dialogRoot = uiBuilder.Current;
+
+            uiBuilder.PushStyle();
+            RadiantUI_Constants.SetupEditorStyle(uiBuilder);
 
             var elements = new List<IDialogElement>();
             var boundErrorKeys = new HashSet<object>();
             var world = uiBuilder.World;
             var inUserspace = world.IsUserspace();
 
-            uiBuilder.Root.OnPrepareDestroy += (slot) => dialog.Dispose();
-
-            (IDictionary<object, string>, IDictionary<object, string>) onChange()
+            uiBuilder.Root.OnPrepareDestroy += (slot) => dialogState.Dispose();
+            //TODO: move change and error handling to Dialog, make it capable of nested dialogs
+            //(makes precomputed boundErrorKeys more difficult)
+            //TODO: future-proof dynamically adding/removing dialogs (really?)
+            Action<object> onInput = onInputOverride ?? ((object key) =>
             {
-                IDictionary<object, string> errors, unboundErrors;
-                if (overrideUpdateAndValidate != null)
+                var errors = dialogState.UpdateAndValidate(key);
+                var unboundErrors = new Dictionary<object, string>(errors);
+                foreach (var errorKey in boundErrorKeys)
                 {
-                    (errors, unboundErrors) = overrideUpdateAndValidate(dialog);
-                }
-                else
-                {
-                    errors = dialog.UpdateAndValidate();
-                    unboundErrors = new Dictionary<object, string>(errors);
-                    foreach (var errorKey in boundErrorKeys)
-                    {
-                        unboundErrors.Remove(errorKey);
-                    }
+                    unboundErrors.Remove(errorKey);
                 }
 
                 world.RunSynchronously(() =>
@@ -184,13 +221,11 @@ namespace UIXDialogBuilder
                         element.DisplayErrors(errors, unboundErrors);
                     }
                 });
-
-                return (errors, unboundErrors);
-            }
+            });
 
             foreach (var definition in definitions)
             {
-                var element = definition.Create(uiBuilder, dialog, onChange, inUserspace);
+                var element = definition.Create(uiBuilder, dialogState, onInput, inUserspace);
                 if (element != null)
                 {
                     elements.Add(element);
@@ -201,7 +236,12 @@ namespace UIXDialogBuilder
                 }
             }
 
-            onChange();
+            var dialog = new Dialog(dialogState, dialogRoot, elements, parent); //executes dialogState.Bind(dialog) already
+            //TODO: may be optimized for things like 
+            onInput(null);
+
+            uiBuilder.PopStyle();
+            return dialog;
         }
 
         /// <summary>
@@ -209,35 +249,45 @@ namespace UIXDialogBuilder
         /// </summary>
         /// <param name="title">title text of the window</param>
         /// <param name="world">world to place the window in, userspace will directly editing secret options</param>
-        /// <param name="dialog">dialog object</param>
-        /// <returns>The root of the created window</returns>
-        public Slot BuildWindow(string title, World world, T dialog)
+        /// <param name="dialogState">dialog object</param>
+        /// <param name="parent">parent dialog</param>
+        /// <returns>(The dialog reference, the root of the created window)</returns>
+        public (Dialog dialog, Slot window) BuildWindow(string title, World world, TDialogState dialogState, Dialog parent = null)
         {
             if (title == null) throw new ArgumentNullException(nameof(title));
             if (world == null) throw new ArgumentNullException(nameof(world));
-            if (dialog == null) throw new ArgumentNullException(nameof(dialog));
+            if (dialogState == null) throw new ArgumentNullException(nameof(dialogState));
 
             var slot = world.AddSlot(title, persistent: false);
-            //TODO: adjust to return dialog instance and window slot (combined in DialogWindow?
-            //)
-            var uiBuilder = RadiantUI_Panel.SetupPanel(slot, title, ModInstance.Current.CanvasSize);
+            slot.AttachComponent<NoDestroyUndo>();
+            slot.AttachComponent<DuplicateBlock>();
+
+            var uiBuilder = RadiantUI_Panel.SetupPanel(slot, title, ModInstance.Current.MaxCanvasSize);
             var scale = ModInstance.Current.UnitScale;
             slot.GlobalScale = new float3(scale, scale, scale);
 
+            uiBuilder.VerticalLayout(spacing: 0, paddingBottom: 16f, paddingTop: 0f, paddingLeft: 0f, paddingRight: 0f);
+
             //uiBuilder.Style.ForceExpandWidth = false;
             uiBuilder.Style.ForceExpandHeight = false;
-            uiBuilder.ScrollArea();
-            uiBuilder.VerticalLayout(ModInstance.Current.Spacing);                      //problem: cannot measure size here
-            var content = uiBuilder.VerticalLayout(ModInstance.Current.Spacing).Slot;   //solution: extra layer for content
-            
-            uiBuilder.FitContent(SizeFit.Disabled, SizeFit.PreferredSize); //TODO: clamp to max-size
-            BuildInPlace(uiBuilder, dialog);
+
+            var scrollRect = uiBuilder.ScrollArea(Alignment.TopLeft);
+            //problem: cannot measure size here, solution: extra layer for content
+            //new problem: scrolling does not work when using FitContent on second layer only, solution: do it on 1st layer too
+            uiBuilder.VerticalLayout(spacing: ModInstance.Current.Spacing);
+            uiBuilder.FitContent(SizeFit.Disabled, SizeFit.PreferredSize);
+
+            var content = uiBuilder.VerticalLayout(ModInstance.Current.Spacing, childAlignment: Alignment.TopLeft).Slot;
+            uiBuilder.FitContent(SizeFit.Disabled, SizeFit.PreferredSize);
+
+            var dialog = BuildInPlace(uiBuilder, dialogState, parent);
 
             var offsetFlux = slot.AddSlot("CanvasSizeDriver");
             var contentSizeDriver = content.AttachComponent<RectSizeDriver>();
+            contentSizeDriver.Scale.Value = new float2(0, 1);
             var contentSize = offsetFlux.AttachComponent<ValueField<float2>>();
             var offset = offsetFlux.AttachComponent<ValueInput<float2>>();
-            offset.Value.Value = new float2(32, 120);
+            offset.Value.Value = ModInstance.Current.CanvasSizeOffset;
             contentSize.Value.Value = uiBuilder.Canvas.Size - offset.Value.Value;
             contentSizeDriver.TargetSize.Target = contentSize.Value;
             var add = offsetFlux.AttachComponent<ValueAdd<float2>>();
@@ -247,15 +297,20 @@ namespace UIXDialogBuilder
             contentSizeReference.Reference.Target = contentSize.Value;
             add.A.Target = contentSizeSource;
             add.B.Target = offset;
+            var min = offsetFlux.AttachComponent<ValueMin<float2>>();
+            var maxSize = offsetFlux.AttachComponent<ValueInput<float2>>();
+            maxSize.Value.Value = ModInstance.Current.MaxCanvasSize;
+            min.A.Target = add;
+            min.B.Target = maxSize;
             var canvasSizeDriver = offsetFlux.AttachComponent<FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes.ValueFieldDrive<float2>>();
-            canvasSizeDriver.Value.Target = add;
+            canvasSizeDriver.Value.Target = min;
             var canvasSizeProxy = offsetFlux.AttachComponent<FrooxEngine.ProtoFlux.CoreNodes.FieldDriveBase<float2>.Proxy>();
             canvasSizeProxy.Node.Target = canvasSizeDriver;
             canvasSizeProxy.Drive.Target = uiBuilder.Canvas.Size;
 
             slot.PositionInFrontOfUser(float3.Backward);
 
-            return slot;
+            return (dialog, slot);
         }
     }
 }

@@ -55,15 +55,23 @@ namespace UIXDialogBuilder
 
         [DialogOption("A Matrix", secret: true)]
         float4x4 matrix;
+        [DialogOption("A Public Matrix")]
+        float4x4 matrix2; //TODO: figure out how inspector panel makes matrix size correct but not this mod
         [DialogOption("Some Text")]
         string text;
 #pragma warning restore IDE0044 // Add readonly modifier
 #pragma warning restore CS0649 // Never assigned
 
-        public void Bind(Dialog dialog)
+        private Dialog _Dialog;
+        public Dialog Dialog
         {
-            UniLog.Log("Bind");
-            FrooxEngineBootstrap.LogStream.Flush();
+            set
+            {
+                UniLog.Log("Bind");
+                FrooxEngineBootstrap.LogStream.Flush();
+                _Dialog = value;
+            }
+            get => _Dialog;
         }
 
         [DialogAction("Left")]
@@ -97,10 +105,10 @@ namespace UIXDialogBuilder
             FrooxEngineBootstrap.LogStream.Flush();
         }
 
-        public IDictionary<object, string> UpdateAndValidate()
+        public IDictionary<object, string> UpdateAndValidate(object key)
         {
             var errors = new Dictionary<object, string>();
-            UniLog.Log($"Validate {matrix} {text} {output}");
+            UniLog.Log($"Validate {matrix} {matrix2} {text} {output}");
             if (list != null)
             {
                 UniLog.Log($"List with {list.Count} items:");

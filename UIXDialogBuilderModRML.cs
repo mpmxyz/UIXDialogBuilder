@@ -31,10 +31,12 @@ namespace UIXDialogBuilder
         public string SecretEditorAcceptText => DefaultConfigs.SecretEditorAcceptText;
         public string SecretPatternText => DefaultConfigs.SecretPatternText;
         public float Spacing => DefaultConfigs.Spacing;
-        public float ButtonHeight => DefaultConfigs.ButtonHeight;
+        public float LineHeight => DefaultConfigs.LineHeight;
         public float ErrorHeight => DefaultConfigs.ErrorHeight;
         public float UnitScale => DefaultConfigs.UnitScale;
-        public float2 CanvasSize => DefaultConfigs.CanvasSize;
+        public float2 MinCanvasSize => DefaultConfigs.MinCanvasSize;
+        public float2 MaxCanvasSize => DefaultConfigs.MaxCanvasSize;
+        public float2 CanvasSizeOffset => DefaultConfigs.CanvasSizeOffset;
 
         public override void OnEngineInit()
         {

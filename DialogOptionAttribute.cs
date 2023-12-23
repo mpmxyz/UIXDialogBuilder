@@ -21,8 +21,8 @@ namespace UIXDialogBuilder
             {
                 return null;
             }
-            return (IReversibleMapper) ToOutsideWorldMapper.GetConstructor(new Type[] { valueOwner.GetType() })?.Invoke(new object[] { valueOwner })
-                ?? (IReversibleMapper) ToOutsideWorldMapper.GetConstructor(Type.EmptyTypes)?.Invoke(Array.Empty<object>())
+            return (IReversibleMapper)ToOutsideWorldMapper.GetConstructor(new Type[] { valueOwner.GetType() })?.Invoke(new object[] { valueOwner })
+                ?? (IReversibleMapper)ToOutsideWorldMapper.GetConstructor(Type.EmptyTypes)?.Invoke(Array.Empty<object>())
                 ?? throw new InvalidOperationException($"{ToOutsideWorldMapper} lacks constructor with no argument or one matching type {valueOwner.GetType()}!");
         }
 

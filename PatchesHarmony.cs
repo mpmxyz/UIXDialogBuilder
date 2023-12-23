@@ -26,10 +26,7 @@ namespace UIXDialogBuilder
                 }
                 var item = menu.AddItem("Test dialog", (Uri)null, colorX.Black);
                 item.Button.LocalPressed += (b, e) => new DialogBuilder<TestDialogState>()
-                .BuildWindow(
-                    "Test",
-                    menu.World,
-                    new TestDialogState());
+                    .BuildWindow("Test", menu.World, new TestDialogState());
             }
         }
     }

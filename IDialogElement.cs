@@ -13,7 +13,7 @@ namespace UIXDialogBuilder
         bool Visible { get; set; }
 
         /*setting World state to dialog state*/
-        void Reset(); //TODO: redesign to allow partial resets without O(n²)
+        void Reset();
         void DisplayErrors(IDictionary<object, string> allErrors, IDictionary<object, string> unboundErrors);
 
         void ShowAll();

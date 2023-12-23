@@ -7,13 +7,20 @@ namespace UIXDialogBuilder
     {
         private readonly Slot _Slot;
         private readonly IEnumerable<IDialogElement> _Elements;
+        private readonly Dialog _Parent;
 
-        internal Dialog(IDialogState state, Slot slot, IEnumerable<IDialogElement> elements)
+        internal Dialog(IDialogState state, Slot root, IEnumerable<IDialogElement> elements, Dialog parent = null)
         {
-            _Slot = slot;
+            _Slot = root;
             _Elements = elements;
-            state.Bind(this);
+            _Parent = parent;
+            if (parent == null)
+            {
+                state.Dialog = this;
+            }
         }
+
+        public Dialog RootDialog => _Parent?.RootDialog ?? this;
 
         public override object Key => this;
 
