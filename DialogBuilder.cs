@@ -215,9 +215,6 @@ namespace UIXDialogBuilder
             var inUserspace = world.IsUserspace();
 
             uiBuilder.Root.OnPrepareDestroy += (slot) => dialogState.Dispose();
-            //TODO: move change and error handling to Dialog, make it capable of nested dialogs
-            //(makes precomputed boundErrorKeys more difficult)
-            //TODO: future-proof dynamically adding/removing dialogs (really?)
             Dialog dialog = null;
             Action<object> onInput = onInputOverride ?? ((object key) =>
             {
