@@ -261,6 +261,7 @@ namespace UIXDialogBuilder
             var slot = world.AddSlot(title, persistent: false);
             slot.AttachComponent<NoDestroyUndo>();
             slot.AttachComponent<DuplicateBlock>();
+            slot.DestroyWhenUserLeaves(slot.LocalUser);
 
             var uiBuilder = RadiantUI_Panel.SetupPanel(slot, title, ModInstance.Current.MaxCanvasSize);
             var scale = ModInstance.Current.UnitScale;

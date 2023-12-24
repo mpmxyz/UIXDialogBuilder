@@ -13,24 +13,35 @@ namespace UIXDialogBuilder
         public bool Secret { get; }
         public bool ShowErrors { get; }
         public Type ToOutsideWorldMapper { get; }
+        public Type EditorGenerator { get; }
 
         public IReversibleMapper CreateMapper(object valueOwner)
         {
-            if (valueOwner == null) throw new ArgumentNullException(nameof(valueOwner));
-            if (ToOutsideWorldMapper == null)
-            {
-                return null;
-            }
-            return (IReversibleMapper)ToOutsideWorldMapper.GetConstructor(new Type[] { valueOwner.GetType() })?.Invoke(new object[] { valueOwner })
-                ?? (IReversibleMapper)ToOutsideWorldMapper.GetConstructor(Type.EmptyTypes)?.Invoke(Array.Empty<object>())
-                ?? throw new InvalidOperationException($"{ToOutsideWorldMapper} lacks constructor with no argument or one matching type {valueOwner.GetType()}!");
+            return (IReversibleMapper) ToOutsideWorldMapper?.Construct(valueOwner);
         }
 
-        public bool HasMapperFor(Type ownerType)
+        public bool HasMapperFor(Type ownerType, Type valueType)
         {
-            return (ToOutsideWorldMapper.GetConstructor(new Type[] { ownerType }) != null
-                || ToOutsideWorldMapper.GetConstructor(Type.EmptyTypes) != null);
+            return ToOutsideWorldMapper.HasConstructorFor(ownerType)
+                && ToOutsideWorldMapper.GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>))?[0] == valueType;
         }
+
+        public object CreateUIGenerator<TValue>(object valueOwner)
+        {
+            return (IEditorGenerator<TValue>) EditorGenerator?.Construct(valueOwner);
+        }
+
+        public bool HasEditorGeneratorFor(Type ownerType, Type innerType)
+        {
+            return EditorGenerator.HasConstructorFor(ownerType)
+                && EditorGenerator.GetGenericArgumentsFromInterface(typeof(IEditorGenerator<>))?[0] == ExpectedEditorType(innerType);
+        }
+
+        public Type ExpectedEditorType(Type innerType)
+        {
+            return ToOutsideWorldMapper?.GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>))?[1] ?? innerType;
+        }
+
 
         /// <summary>
         /// Creates an option line in the dialog
@@ -39,15 +50,22 @@ namespace UIXDialogBuilder
         /// <param name="secret">makes the user edit this in userspace</param>
         /// <param name="showErrors">causes some space below the input to be reserved for error messages.</param>
         /// <param name="toOutsideWorldMapper">allows editing custom types using an in-world representation using a non-custom type</param>
-        public DialogOptionAttribute(string name, bool secret = false, bool showErrors = true, Type toOutsideWorldMapper = null)
+        /// <param name="editorGenerator"></param>
+        public DialogOptionAttribute(string name, bool secret = false, bool showErrors = true, Type toOutsideWorldMapper = null, Type editorGenerator = null)
         {
             Name = name;
             Secret = secret;
             ShowErrors = showErrors;
             ToOutsideWorldMapper = toOutsideWorldMapper;
+            EditorGenerator = editorGenerator;
+
             if (ToOutsideWorldMapper != null && ToOutsideWorldMapper.GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>)) == null)
             {
                 throw new ArgumentException($"Mapper does not implement {typeof(IReversibleMapper<,>)}!", nameof(toOutsideWorldMapper));
+            }
+            if (EditorGenerator != null && EditorGenerator.GetGenericArgumentsFromInterface(typeof(IEditorGenerator<>)) == null)
+            {
+                throw new ArgumentException($"EditorGenerator does not implement {typeof(IEditorGenerator<>)}!", nameof(editorGenerator));
             }
         }
     }

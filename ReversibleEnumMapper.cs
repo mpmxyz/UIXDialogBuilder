@@ -1,29 +1,22 @@
 ﻿using System;
+using System.Globalization;
 
 namespace UIXDialogBuilder
 {
-    //TODO: annotation to create custom UI
-
-    internal class ReversibleEnumMapper<T> : ReversibleMapperBase<T, long> where T : Enum
+    internal class ReversibleEnumMapper<TEnum> : ReversibleMapperBase<TEnum, ulong>
+        where TEnum : unmanaged, Enum
     {
-        public override bool TryMapToInner(long outer, out T inner)
+        private readonly Type enumType = typeof(TEnum);
+
+        public override bool TryMapToInner(ulong outer, out TEnum inner)
         {
-            //TODO: flag handling (combination of constants -> IsDefined fails)
-            if (Enum.IsDefined(typeof(T), outer))
-            {
-                inner = (T)(object)outer;
-                return true;
-            }
-            else
-            {
-                inner = default;
-                return false;
-            }
+            inner = (TEnum)Enum.ToObject(enumType, outer);
+            return true;
         }
 
-        public override bool TryMapToOuter(T inner, out long outer)
+        public override bool TryMapToOuter(TEnum inner, out ulong outer)
         {
-            outer = (long)(object)inner;
+            outer = Convert.ToUInt64(inner, CultureInfo.InvariantCulture);
             return true;
         }
     }

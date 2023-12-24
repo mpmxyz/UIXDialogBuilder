@@ -44,14 +44,26 @@ namespace UIXDialogBuilder
 
             if (conf.ToOutsideWorldMapper != null)
             {
-                var mapperTypeArgs = conf.ToOutsideWorldMapper.GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>));
-                if (mapperTypeArgs[0] != typeof(TValue))
+                if (!conf.HasMapperFor(typeof(TDialogState), typeof(TValue)))
                 {
-                    throw new ArgumentException($"Type argument TInner of mapper {conf.ToOutsideWorldMapper} does not match type of value!", nameof(conf));
+                    throw new ArgumentException(
+                        conf.ToOutsideWorldMapper.HasConstructorFor(typeof(TDialogState))
+                        ? $"{conf.ToOutsideWorldMapper} does not match the type {nameof(IReversibleMapper)}`2[{typeof(TValue)},???]!"
+                        : $"{conf.ToOutsideWorldMapper} does not have a no-arg or single arg constructor matching {typeof(TDialogState)}!",
+                        nameof(conf)
+                    );
                 }
-                if (!conf.HasMapperFor(typeof(TDialogState)))
+            }
+            if (conf.EditorGenerator != null)
+            {
+                if (!conf.HasEditorGeneratorFor(typeof(TDialogState), typeof(TValue)))
                 {
-                    throw new ArgumentException($"Mapper {conf.ToOutsideWorldMapper} does not have a no-arg or single arg constructor matching {typeof(TDialogState)}!", nameof(conf));
+                    throw new ArgumentException(
+                        conf.EditorGenerator.HasConstructorFor(typeof(TDialogState))
+                        ? $"{conf.EditorGenerator} does not match the type {typeof(IEditorGenerator<>).MakeGenericType(conf.ExpectedEditorType(typeof(TValue)))}"
+                        : $"{conf.EditorGenerator} does not have a no-arg or single arg constructor matching {typeof(TDialogState)}!",
+                        nameof(conf)
+                    );
                 }
             }
         }
@@ -92,7 +104,6 @@ namespace UIXDialogBuilder
             }
         }
 
-
         public IDialogElement
             Create(
             UIBuilder uiBuilder,
@@ -113,7 +124,7 @@ namespace UIXDialogBuilder
             {
                 if (conf.Secret && !inUserspace)
                 {
-                    var secretDialog = new SecretDialog(this.conf.Name, this, dialogState, onInput);
+                    var secretDialog = new SecretDialog(conf.Name, this, dialogState, onInput);
                     StaticBuildFunctions.BuildSecretButton(uiBuilder2, () => secretDialog.Open());
                     return (secretDialog.Reset, secretDialog.DisplayError);
                 }
@@ -129,7 +140,8 @@ namespace UIXDialogBuilder
                             () => getter(dialogState),
                             conf.Secret,
                             conf.Name,
-                            customAttributes
+                            customAttributes,
+                            (IEditorGenerator<TValue>)(conf.EditorGenerator?.Construct(dialogState))
                         ), null);
                     }
                     else
@@ -141,12 +153,13 @@ namespace UIXDialogBuilder
                         ).Invoke(null, new object[]{
                             uiBuilder2,
                             uiBuilder2.Root,
-                            (Action<TValue>) ((x) => { setter(dialogState, x); onInput(key); }),
+                            (Action<TValue>)((x) => { setter(dialogState, x); onInput(key); }),
                             (Func<TValue>)(() => getter(dialogState)),
                             conf.Secret,
                             conf.Name,
                             customAttributes,
-                            mapper
+                            mapper,
+                            conf.EditorGenerator?.Construct(dialogState)
                         }), null);
                     }
                 }
@@ -232,7 +245,7 @@ namespace UIXDialogBuilder
 
             public SecretDialog(string title, IDialogEntryDefinition<TDialogState> option, TDialogState dialogState, Action<object> onInput)
             {
-                this.dialogBuilder = new DialogBuilder<TDialogState>(addDefaults: false, onInput)
+                dialogBuilder = new DialogBuilder<TDialogState>(addDefaults: false, onInput)
                         .AddEntry(option)
                         .AddEntry(new DialogActionDefinition<TDialogState>(
                             null,

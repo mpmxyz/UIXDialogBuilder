@@ -1,5 +1,6 @@
 ﻿using Elements.Core;
 using FrooxEngine;
+using System;
 using System.Collections.Generic;
 
 namespace UIXDialogBuilder
@@ -44,6 +45,23 @@ namespace UIXDialogBuilder
             }
         }
 
+        private enum TestEnum
+        {
+            A = 3,
+            B = 2,
+            C = 0,
+            D = 4
+        }
+
+        [Flags]
+        private enum TestFlags
+        {
+            A = 1,
+            B = 2,
+            C = 4,
+            ALL = 7
+        }
+
 #pragma warning disable IDE0044 // Add readonly modifier
 #pragma warning disable CS0649 // Never assigned
         [DialogOption("List", toOutsideWorldMapper: typeof(ListMapper))]
@@ -56,7 +74,11 @@ namespace UIXDialogBuilder
         [DialogOption("A Matrix", secret: true)]
         float4x4 matrix;
         [DialogOption("A Public Matrix")]
-        float4x4 matrix2; //TODO: figure out how inspector panel makes matrix size correct but not this mod
+        float4x4 matrix2;
+        [DialogOption("An enum", toOutsideWorldMapper: typeof(ReversibleEnumMapper<TestEnum>), editorGenerator: typeof(EnumEditorGenerator<TestEnum>))]
+        TestEnum enum1;
+        [DialogOption("Flags", toOutsideWorldMapper: typeof(ReversibleEnumMapper<TestFlags>), editorGenerator: typeof(EnumEditorGenerator<TestFlags>))]
+        TestFlags flags;
         [DialogOption("Some Text")]
         string text;
 #pragma warning restore IDE0044 // Add readonly modifier
