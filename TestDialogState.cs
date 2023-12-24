@@ -99,38 +99,38 @@ namespace UIXDialogBuilder
         [DialogAction("Left")]
         public void OnLeft()
         {
-            UniLog.Log("OnLeft");
-            output?.World.RunSynchronously(() => output.Value = "OnLeft");
-            FrooxEngineBootstrap.LogStream.Flush();
+            OutputMesssage("OnLeft");
         }
 
         [DialogAction("Middle", onlyValidating: new object[0])]
-        public void OnMiddle()
+        public void OnMiddle(User user)
         {
-            UniLog.Log("OnMiddle");
-            output?.World.RunSynchronously(() => output.Value = "OnMiddle");
-            FrooxEngineBootstrap.LogStream.Flush();
+            OutputMesssage($"OnMiddle ({user})");
         }
 
-        [DialogAction("Right", onlyValidating: new object[] { "text" })]
-        public void OnRight()
+        [DialogAction("Right", isPrivate: false, onlyValidating: new object[] { "text" })]
+        public void OnRight(User user)
         {
-            UniLog.Log("OnRight");
-            output?.World.RunSynchronously(() => output.Value = "OnRight");
-            FrooxEngineBootstrap.LogStream.Flush();
+            OutputMesssage($"OnRight ({user})");
         }
 
         public void Dispose()
         {
-            UniLog.Log("OnDestroy");
-            output?.World.RunSynchronously(() => output.Value = "OnDestroy");
+            OutputMesssage("OnDestroy");
+        }
+
+        private void OutputMesssage(string msg)
+        {
+            UniLog.Log(msg);
+            output?.World?.RunSynchronously(() => output.Value = msg);
+            Dialog?.Slot?.World?.Debug?.Text(msg);
             FrooxEngineBootstrap.LogStream.Flush();
         }
 
         public IDictionary<object, string> UpdateAndValidate(object key)
         {
             var errors = new Dictionary<object, string>();
-            UniLog.Log($"Validate {matrix} {matrix2} {text} {enum1} {flags} {output}");
+
             if (list != null)
             {
                 UniLog.Log($"List with {list.Count} items:");
@@ -167,9 +167,7 @@ namespace UIXDialogBuilder
             }
 #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 #pragma warning restore CA1308 // Normalize strings to uppercase
-            output?.World.RunSynchronously(() => output.Value = $"{matrix} {text}");
-            UniLog.Log($"Validated: {errors}");
-            FrooxEngineBootstrap.LogStream.Flush();
+            OutputMesssage($"UpdateAndValidate\nkey={key}\nlist?.Count={list?.Count}\nmatrix={matrix}\nmatrix2={matrix2}\nenum1={enum1}\nflags={flags}\ntext={text}\nerrors={errors}");
             return errors;
         }
     }

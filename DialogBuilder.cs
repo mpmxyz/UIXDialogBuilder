@@ -93,11 +93,25 @@ namespace UIXDialogBuilder
                 {
                     if (attr is DialogActionAttribute conf)
                     {
-                        if (methodInfo.GetParameters().Length != 0)
+                        var parameters = methodInfo.GetParameters();
+                        if (parameters.Length != 0)
                         {
-                            throw new InvalidOperationException($"DialogAction '{methodInfo.Name}' must have no arguments!");
+                            if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableFrom(typeof(User)))
+                            {
+                                throw new InvalidOperationException($"Dialog action '{methodInfo.Name}' must have no arguments or a single {typeof(User)} argument!");
+                            }
                         }
-                        actions.Add(new DialogActionDefinition<TDialogState>(methodInfo.Name, conf, (dialog) => methodInfo.Invoke(dialog, Array.Empty<object>())));
+                        Action<TDialogState, User> action;
+                        if (parameters.Length == 0)
+                        {
+                            action = (dialog, user) => methodInfo.Invoke(dialog, Array.Empty<object>());
+                        }
+                        else
+                        {
+                            action = (dialog, user) => methodInfo.Invoke(dialog, new object[] { user });
+                        }
+
+                        actions.Add(new DialogActionDefinition<TDialogState>(methodInfo.Name, conf, action));
                         break;
                     }
                 }
@@ -197,7 +211,6 @@ namespace UIXDialogBuilder
             RadiantUI_Constants.SetupEditorStyle(uiBuilder);
 
             var elements = new List<IDialogElement>();
-            var boundErrorKeys = new HashSet<object>();
             var world = uiBuilder.World;
             var inUserspace = world.IsUserspace();
 
@@ -205,24 +218,22 @@ namespace UIXDialogBuilder
             //TODO: move change and error handling to Dialog, make it capable of nested dialogs
             //(makes precomputed boundErrorKeys more difficult)
             //TODO: future-proof dynamically adding/removing dialogs (really?)
+            Dialog dialog = null;
             Action<object> onInput = onInputOverride ?? ((object key) =>
             {
                 var errors = dialogState.UpdateAndValidate(key);
                 var unboundErrors = new Dictionary<object, string>(errors);
-                foreach (var errorKey in boundErrorKeys)
+                foreach (var errorKey in dialog.BoundErrorKeys)
                 {
                     unboundErrors.Remove(errorKey);
                 }
-
                 world.RunSynchronously(() =>
                 {
-                    foreach (var element in elements)
-                    {
-                        element.DisplayErrors(errors, unboundErrors);
-                    }
+                    dialog.DisplayErrors(errors, unboundErrors);
                 });
             });
 
+            var boundErrorKeys = new HashSet<object>();
             foreach (var definition in definitions)
             {
                 var element = definition.Create(uiBuilder, dialogState, onInput, inUserspace);
@@ -236,9 +247,8 @@ namespace UIXDialogBuilder
                 }
             }
 
-            var dialog = new Dialog(dialogState, dialogRoot, elements, parent); //executes dialogState.Bind(dialog) already
-            //TODO: may be optimized for things like 
-            onInput(null);
+            dialog = new Dialog(dialogState, dialogRoot, elements, parent); //sets dialogState.Dialog already
+            onInput(dialog);
 
             uiBuilder.PopStyle();
             return dialog;

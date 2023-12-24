@@ -21,6 +21,7 @@ namespace UIXDialogBuilder
         }
 
         public Dialog RootDialog => _Parent?.RootDialog ?? this;
+        public Slot Slot => _Slot;
 
         public override object Key => this;
 

@@ -250,7 +250,7 @@ namespace UIXDialogBuilder
                         .AddEntry(new DialogActionDefinition<TDialogState>(
                             null,
                             new DialogActionAttribute(ModInstance.Current.SecretEditorAcceptText, onlyValidating: Array.Empty<object>()),
-                            (x) => Close()
+                            (x, u) => Close()
                             ));
                 this.title = title;
                 this.dialogState = dialogState;

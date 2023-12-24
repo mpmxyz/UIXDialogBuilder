@@ -1,6 +1,5 @@
 ﻿using FrooxEngine.UIX;
 using System;
-using System.Collections.Generic;
 
 namespace UIXDialogBuilder
 {

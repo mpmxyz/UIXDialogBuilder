@@ -1,13 +1,20 @@
 ﻿using Elements.Core;
 using FrooxEngine;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes;
+using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
 using System;
 using System.Globalization;
 using System.Reflection;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Users;
+using FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Interaction;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots;
 
 namespace UIXDialogBuilder
 {
-    internal class StaticBuildFunctions
+    //TODO: making it public?
+    internal static class StaticBuildFunctions
     {
         private class MappedValue<TInner, TOuter>
         {
@@ -263,6 +270,69 @@ namespace UIXDialogBuilder
             }
 
             return reset;
+        }
+
+        public static void AddPrivateAction(this Button button, Action<User> onPressed)
+        {
+            if (button == null) throw new ArgumentNullException(nameof(button));
+            if (onPressed == null) throw new ArgumentNullException(nameof(onPressed));
+
+            button.LocalPressed += (IButton b, ButtonEventData bed) =>
+            {
+                onPressed(b.World.LocalUser);
+            };
+            var localEnabled = button.Slot.AttachComponent<ValueUserOverride<bool>>();
+            localEnabled.Target.Target = button.EnabledField;
+            localEnabled.Default.Value = false;
+            localEnabled.CreateOverrideOnWrite.Value = true;
+        }
+
+        public static void AddPublicAction(this IButton button, Action<User> onPressed)
+        {
+            if (button == null) throw new ArgumentNullException(nameof(button));
+            if (onPressed == null) throw new ArgumentNullException(nameof(onPressed));
+
+            var protoflux = button.Slot.AddSlot("Protoflux");
+            var template = button.Slot.AddSlot("Event");
+            var queue = button.Slot.AddSlot("Queue");
+            var userVar = template.AttachComponent<ReferenceField<User>>();
+            var templateRef = protoflux.AttachComponent<RefObjectInput<Slot>>();
+            templateRef.Target.Target = template;
+            var queueRef = protoflux.AttachComponent<RefObjectInput<Slot>>();
+            queueRef.Target.Target = queue;
+            var localUser = protoflux.AttachComponent<LocalUser>();
+            var userSource = protoflux.AttachComponent<ReferenceSource<User>>();
+            var userSourceRef = protoflux.AttachComponent<GlobalReference<SyncRef<User>>>();
+            userSource.Source.Target = userSourceRef;
+            userSourceRef.Reference.Target = userVar.Reference;
+
+            var buttonRef = protoflux.AttachComponent<GlobalReference<IButton>>();
+            buttonRef.Reference.Target = button;
+            var buttonEvents = protoflux.AttachComponent<ButtonEvents>();
+            buttonEvents.Button.Target = buttonRef;
+            var setUser = protoflux.AttachComponent<ObjectWrite<FrooxEngineContext, User>>();
+            setUser.Value.Target = localUser;
+            setUser.Variable.Target = userSource;
+            var duplicate = protoflux.AttachComponent<DuplicateSlot>();
+            duplicate.Template.Target = templateRef;
+            var reparent = protoflux.AttachComponent<SetParent>();
+            reparent.Instance.Target = duplicate.Duplicate;
+            reparent.NewParent.Target = queueRef;
+
+            buttonEvents.Pressed.Target = setUser;
+            setUser.OnWritten.Target = duplicate;
+            duplicate.Next.Target = reparent;
+
+            queue.ChildAdded += (_, child) =>
+            {
+                var user = child.GetComponent<ReferenceField<User>>()?.Reference.Target;
+                child.ReferenceID.ExtractIDs(out ulong position, out byte allocationID);
+                if (user != null && user == child.World.GetUserByAllocationID(allocationID))
+                {
+                    onPressed(user);
+                }
+                child.Destroy();
+            };
         }
 
         private class FieldInfoDecorator : FieldInfo
