@@ -10,6 +10,7 @@ using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Users;
 using FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes;
 using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Interaction;
 using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots;
+using ProtoFlux.Core;
 
 namespace UIXDialogBuilder
 {
@@ -105,10 +106,17 @@ namespace UIXDialogBuilder
             ICustomAttributeProvider customAttributes,
             IEditorGenerator<T> editorGenerator)
         {
+            //TODO: refactor editorGenerator to also create the field
             Action reset;
             const BindingFlags FLAGS = BindingFlags.NonPublic | BindingFlags.Static;
             var type = typeof(T);
-            if (typeof(Type) == type)
+            if (type.IsEnum && type.IsUnmanaged())
+            {
+                reset = (Action)typeof(StaticBuildFunctions)
+                    .GetGenericMethod(nameof(BuildEnumEditor), FLAGS, type)
+                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes });
+            }
+            else if (typeof(Type) == type)
             {
                 reset = (Action)typeof(StaticBuildFunctions)
                     .GetMethod(nameof(BuildTypeEditor))
@@ -155,7 +163,26 @@ namespace UIXDialogBuilder
             uiBuilder.PopStyle();
         }
 
-
+        private static Action BuildEnumEditor<T>(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<T> setInner,
+            Func<T> getInner,
+            string name,
+            ICustomAttributeProvider customAttributes) where T : unmanaged, Enum
+        {
+            return BuildEditorWithMapping(
+                uiBuilder,
+                iFieldSlot,
+                setInner,
+                getInner,
+                false,
+                name,
+                customAttributes,
+                new ReversibleEnumMapper<T>(),
+                new EnumEditorGenerator<T>()
+            );
+        }
 
         private static Action BuildTypeEditor(
             UIBuilder uiBuilder,

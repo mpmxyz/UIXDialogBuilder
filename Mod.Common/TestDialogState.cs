@@ -77,7 +77,7 @@ namespace UIXDialogBuilder
         float4x4 matrix2;
         [DialogOption("An enum", toOutsideWorldMapper: typeof(ReversibleEnumMapper<TestEnum>), editorGenerator: typeof(EnumEditorGenerator<TestEnum>))]
         TestEnum enum1;
-        [DialogOption("Flags", toOutsideWorldMapper: typeof(ReversibleEnumMapper<TestFlags>), editorGenerator: typeof(EnumEditorGenerator<TestFlags>))]
+        [DialogOption("Flags")] //without explicit mappers
         TestFlags flags;
         [DialogOption("Some Text")]
         string text;

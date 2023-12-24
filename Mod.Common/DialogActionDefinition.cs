@@ -1,4 +1,5 @@
-﻿using FrooxEngine;
+﻿using Elements.Core;
+using FrooxEngine;
 using FrooxEngine.UIX;
 using System;
 using System.Collections.Generic;
@@ -71,6 +72,7 @@ namespace UIXDialogBuilder
             {
                 button.AddPublicAction(onPressed);
             }
+            button.Enabled = false; //true->false->true forces ValueUserOverride to generate an override for local user
             element.UpdateEnabled();
 
             return element;

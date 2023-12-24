@@ -230,24 +230,18 @@ namespace UIXDialogBuilder
                 });
             });
 
-            var boundErrorKeys = new HashSet<object>();
             foreach (var definition in definitions)
             {
                 var element = definition.Create(uiBuilder, dialogState, onInput, inUserspace);
                 if (element != null)
                 {
                     elements.Add(element);
-                    foreach (var key in element.BoundErrorKeys)
-                    {
-                        boundErrorKeys.Add(key);
-                    }
                 }
             }
+            uiBuilder.PopStyle();
 
             dialog = new Dialog(dialogState, dialogRoot, elements, parent); //sets dialogState.Dialog already
             onInput(dialog);
-
-            uiBuilder.PopStyle();
             return dialog;
         }
 
