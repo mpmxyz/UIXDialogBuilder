@@ -24,7 +24,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PatchesHarmony.cs" />
-    <Compile Include="UIXDialogBuilderModRML.cs" />
+    <Folder Include="Mod.RML"/>
+    <Folder Include="Patches.Harmony"/>
+    <Compile Include="Mod.RML/**"/>
+    <Compile Include="Patches.Harmony/**"/>
   </ItemGroup>
 </Project>

@@ -24,6 +24,7 @@ A library mod for Resonite that allows other mods to spawn UIX dialogs based on 
 
 ## Usage (Mod Developer)
 
+- TODO: adding the dependencies
 - TODO: ```DialogBuilder```
 - TODO: attributes
 - TODO: ```Dialog``` class
