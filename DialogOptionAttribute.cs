@@ -17,7 +17,7 @@ namespace UIXDialogBuilder
 
         public IReversibleMapper CreateMapper(object valueOwner)
         {
-            return (IReversibleMapper) ToOutsideWorldMapper?.Construct(valueOwner);
+            return (IReversibleMapper)ToOutsideWorldMapper?.Construct(valueOwner);
         }
 
         public bool HasMapperFor(Type ownerType, Type valueType)
@@ -28,7 +28,7 @@ namespace UIXDialogBuilder
 
         public object CreateUIGenerator<TValue>(object valueOwner)
         {
-            return (IEditorGenerator<TValue>) EditorGenerator?.Construct(valueOwner);
+            return (IEditorGenerator<TValue>)EditorGenerator?.Construct(valueOwner);
         }
 
         public bool HasEditorGeneratorFor(Type ownerType, Type innerType)

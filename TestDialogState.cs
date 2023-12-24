@@ -130,7 +130,7 @@ namespace UIXDialogBuilder
         public IDictionary<object, string> UpdateAndValidate(object key)
         {
             var errors = new Dictionary<object, string>();
-            UniLog.Log($"Validate {matrix} {matrix2} {text} {output}");
+            UniLog.Log($"Validate {matrix} {matrix2} {text} {enum1} {flags} {output}");
             if (list != null)
             {
                 UniLog.Log($"List with {list.Count} items:");

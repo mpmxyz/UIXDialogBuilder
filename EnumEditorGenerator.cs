@@ -18,7 +18,8 @@ namespace UIXDialogBuilder
         private readonly ulong[] decrementingValues;
         private readonly (ulong, string)[] valueNames;
 
-        public EnumEditorGenerator() {
+        public EnumEditorGenerator()
+        {
             var values = Enum.GetValues(typeof(TEnum)).Cast<TEnum>().Select(x => Convert.ToUInt64(x, CultureInfo.InvariantCulture)).ToArray();
             var names = Enum.GetNames(typeof(TEnum));
             incrementingValues = values.Distinct().ToArray();

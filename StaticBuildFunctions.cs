@@ -103,9 +103,9 @@ namespace UIXDialogBuilder
             var type = typeof(T);
             if (typeof(Type) == type)
             {
-                reset = (Action) typeof(StaticBuildFunctions)
+                reset = (Action)typeof(StaticBuildFunctions)
                     .GetMethod(nameof(BuildTypeEditor))
-                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes, editorGenerator } );
+                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes, editorGenerator });
             }
             else if (typeof(IWorldElement).IsAssignableFrom(type))
             {
