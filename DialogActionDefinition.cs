@@ -72,7 +72,7 @@ namespace UIXDialogBuilder
                 button.AddPublicAction(onPressed);
             }
             element.UpdateEnabled();
-            
+
             return element;
         }
 
