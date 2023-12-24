@@ -9,8 +9,8 @@ namespace UIXDialogBuilder
     /// <summary>
     /// Definition of a text output that displays validation errors.
     /// </summary>
-    /// <typeparam name="T">type of the dialog object</typeparam>
-    public class DialogErrorDisplayDefinition<T> : IDialogEntryDefinition<T> where T : IDialogState
+    /// <typeparam name="TDialogState">type of the dialog object</typeparam>
+    public class DialogErrorDisplayDefinition<TDialogState> : IDialogEntryDefinition<TDialogState> where TDialogState : IDialogState
     {//TODO: add filter/binding
         private readonly object key;
         private readonly bool onlyUnbound;
@@ -29,28 +29,32 @@ namespace UIXDialogBuilder
         }
 
         public IDialogElement
-            Create(UIBuilder uiBuilder, T dialogState, Func<(IDictionary<object, string>, IDictionary<object, string>)> onChange, bool inUserspace = false)
+            Create(
+            UIBuilder uiBuilder,
+            TDialogState dialogState,
+            Action<object> onInput,
+            bool inUserspace = false)
         {
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
             if (dialogState == null) throw new ArgumentNullException(nameof(dialogState));
-            if (onChange == null) throw new ArgumentNullException(nameof(onChange));
+            if (onInput == null) throw new ArgumentNullException(nameof(onInput));
 
             uiBuilder.PushStyle();
             uiBuilder.Style.PreferredHeight = ModInstance.Current.ErrorHeight * nLines;
             uiBuilder.Style.TextColor = colorX.Red;
             Text text = uiBuilder.Text("", alignment: Alignment.MiddleRight);
             uiBuilder.PopStyle();
-            return new Element(key, text.Slot, text, onlyUnbound);
+            return new Element(key, text.Slot, text.Content, onlyUnbound);
         }
 
         private class Element : DialogElementBase
         {
             private readonly object _Key;
             private readonly Slot _Slot;
-            private readonly Text _Text;
+            private readonly IValue<string> _Text;
             private readonly bool _OnlyUnbound;
 
-            public Element(object key, Slot slot, Text text, bool onlyUnbound)
+            public Element(object key, Slot slot, IValue<string> text, bool onlyUnbound)
             {
                 _Key = key;
                 _Slot = slot;
@@ -75,7 +79,7 @@ namespace UIXDialogBuilder
             public override void DisplayErrors(IDictionary<object, string> allErrors, IDictionary<object, string> unboundErrors)
             {
                 IDictionary<object, string> displayedErrors = _OnlyUnbound ? unboundErrors : allErrors;
-                _Text.Content.Value = $"<b>{string.Join("\n", displayedErrors.Values)}</b>";
+                _Text.Value = $"<b>{string.Join("\n", displayedErrors.Values)}</b>";
             }
 
             public override void Reset()

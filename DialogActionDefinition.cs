@@ -9,13 +9,13 @@ namespace UIXDialogBuilder
     /// <summary>
     /// Defines a simple button with an action
     /// </summary>
-    /// <typeparam name="T">type of the expected dialog object</typeparam>
-    public class DialogActionDefinition<T> : IDialogEntryDefinition<T> where T : IDialogState
+    /// <typeparam name="TDialogState">type of the expected dialog object</typeparam>
+    public class DialogActionDefinition<TDialogState> : IDialogEntryDefinition<TDialogState> where TDialogState : IDialogState
     {
         private readonly object key;
         private readonly DialogActionAttribute conf;
 
-        private readonly Action<T> action;
+        private readonly Action<TDialogState, User> action;
 
         /// <summary>
         /// Creates an action definition
@@ -23,7 +23,7 @@ namespace UIXDialogBuilder
         /// <param name="key">key to change display/interaction</param>
         /// <param name="conf">displayed text and validation behaviour</param>
         /// <param name="action">Action that is triggered when pressing the button</param>
-        public DialogActionDefinition(object key, DialogActionAttribute conf, Action<T> action)
+        public DialogActionDefinition(object key, DialogActionAttribute conf, Action<TDialogState, User> action)
         {
             this.key = key;
             this.conf = conf;
@@ -31,26 +31,48 @@ namespace UIXDialogBuilder
         }
 
         public IDialogElement
-            Create(UIBuilder uiBuilder, T dialogState, Func<(IDictionary<object, string>, IDictionary<object, string>)> onChange, bool inUserspace = false)
+            Create(
+            UIBuilder uiBuilder,
+            TDialogState dialogState,
+            Action<object> onInput,
+            bool inUserspace = false)
         {
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
             if (dialogState == null) throw new ArgumentNullException(nameof(dialogState));
-            //TODO: investigate what onChange is supposed to do
 
             uiBuilder.PushStyle();
-            uiBuilder.Style.PreferredHeight = ModInstance.Current.ButtonHeight;
+            uiBuilder.Style.TextAutoSizeMax = ModInstance.Current.LineHeight;
+            uiBuilder.Style.MinHeight = ModInstance.Current.LineHeight;
+            uiBuilder.Style.PreferredHeight = ModInstance.Current.LineHeight;
+            uiBuilder.Style.FlexibleWidth = 1f;
+
             Button button = uiBuilder.Button(conf.Name);
             uiBuilder.PopStyle();
 
             var element = new Element(key, button.Slot, button, conf.OnlyValidating);
-            button.LocalPressed += (IButton b, ButtonEventData bed) =>
+
+            void onPressed(User user)
             {
-                //"unnecessary" conf check to avoid running Validate
-                if (!element.IsValidating || element.IsValid(dialogState.UpdateAndValidate()))
+                if (element._EffectivelyEnabled)
                 {
-                    action(dialogState);
+                    //"unnecessary" check to avoid running Validate
+                    if (!element.IsValidating || element.IsValid(dialogState.UpdateAndValidate(null)))
+                    {
+                        action(dialogState, user);
+                    }
                 }
-            };
+            }
+
+            if (conf.IsPrivate)
+            {
+                button.AddPrivateAction(onPressed);
+            }
+            else
+            {
+                button.AddPublicAction(onPressed);
+            }
+            element.UpdateEnabled();
+
             return element;
         }
 
@@ -60,7 +82,7 @@ namespace UIXDialogBuilder
             private readonly Slot _Slot;
             private readonly IButton _Button;
             private readonly object[] _ValidationFilter;
-            private bool _Enabled = true;
+            public bool _EffectivelyEnabled = true;
             private bool _IsValid = true;
 
             public Element(object key, Slot slot, IButton button, object[] validationFilter)
@@ -87,7 +109,7 @@ namespace UIXDialogBuilder
             {
                 set
                 {
-                    _Enabled = value;
+                    _EffectivelyEnabled = value;
                     UpdateEnabled();
                 }
             }
@@ -115,9 +137,9 @@ namespace UIXDialogBuilder
                 }
             }
 
-            private void UpdateEnabled()
+            internal void UpdateEnabled()
             {
-                _Button.Enabled = _Enabled && _IsValid;
+                _Button.Enabled = _EffectivelyEnabled && _IsValid;
             }
         }
     }

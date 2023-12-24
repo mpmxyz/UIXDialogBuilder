@@ -1,20 +1,20 @@
 ﻿using Elements.Core;
 using FrooxEngine;
+using System;
 using System.Collections.Generic;
 
 namespace UIXDialogBuilder
 {
-
     /// <summary>
     /// This class demonstrates how to use the library.
     /// </summary>
     internal class TestDialogState : IDialogState
     {
-        private class ListMapper : IReversibleMapper<List<string>, string>
+        private class ListMapper : ReversibleMapperBase<List<string>, string>
         {
             public ListMapper() { }
 
-            public bool TryMap(List<string> value, out string mapped)
+            public override bool TryMapToOuter(List<string> value, out string mapped)
             {
                 if (value == null)
                 {
@@ -38,11 +38,28 @@ namespace UIXDialogBuilder
                 return true;
             }
 
-            public bool TryUnmap(string value, out List<string> unmapped)
+            public override bool TryMapToInner(string value, out List<string> unmapped)
             {
                 unmapped = value != null ? new List<string>(value.Split(',')) : null;
                 return true;
             }
+        }
+
+        private enum TestEnum
+        {
+            A = 3,
+            B = 2,
+            C = 0,
+            D = 4
+        }
+
+        [Flags]
+        private enum TestFlags
+        {
+            A = 1,
+            B = 2,
+            C = 4,
+            ALL = 7
         }
 
 #pragma warning disable IDE0044 // Add readonly modifier
@@ -56,52 +73,64 @@ namespace UIXDialogBuilder
 
         [DialogOption("A Matrix", secret: true)]
         float4x4 matrix;
+        [DialogOption("A Public Matrix")]
+        float4x4 matrix2;
+        [DialogOption("An enum", toOutsideWorldMapper: typeof(ReversibleEnumMapper<TestEnum>), editorGenerator: typeof(EnumEditorGenerator<TestEnum>))]
+        TestEnum enum1;
+        [DialogOption("Flags", toOutsideWorldMapper: typeof(ReversibleEnumMapper<TestFlags>), editorGenerator: typeof(EnumEditorGenerator<TestFlags>))]
+        TestFlags flags;
         [DialogOption("Some Text")]
         string text;
 #pragma warning restore IDE0044 // Add readonly modifier
 #pragma warning restore CS0649 // Never assigned
 
-        public void Bind(Dialog dialog)
+        private Dialog _Dialog;
+        public Dialog Dialog
         {
-            UniLog.Log("Bind");
-            FrooxEngineBootstrap.LogStream.Flush();
+            set
+            {
+                UniLog.Log("Bind");
+                FrooxEngineBootstrap.LogStream.Flush();
+                _Dialog = value;
+            }
+            get => _Dialog;
         }
 
         [DialogAction("Left")]
         public void OnLeft()
         {
-            UniLog.Log("OnLeft");
-            output?.World.RunSynchronously(() => output.Value = "OnLeft");
-            FrooxEngineBootstrap.LogStream.Flush();
+            OutputMesssage("OnLeft");
         }
 
         [DialogAction("Middle", onlyValidating: new object[0])]
-        public void OnMiddle()
+        public void OnMiddle(User user)
         {
-            UniLog.Log("OnMiddle");
-            output?.World.RunSynchronously(() => output.Value = "OnMiddle");
-            FrooxEngineBootstrap.LogStream.Flush();
+            OutputMesssage($"OnMiddle ({user})");
         }
 
-        [DialogAction("Right", onlyValidating: new object[] { "text" })]
-        public void OnRight()
+        [DialogAction("Right", isPrivate: false, onlyValidating: new object[] { "text" })]
+        public void OnRight(User user)
         {
-            UniLog.Log("OnRight");
-            output?.World.RunSynchronously(() => output.Value = "OnRight");
-            FrooxEngineBootstrap.LogStream.Flush();
+            OutputMesssage($"OnRight ({user})");
         }
 
         public void Dispose()
         {
-            UniLog.Log("OnDestroy");
-            output?.World.RunSynchronously(() => output.Value = "OnDestroy");
+            OutputMesssage("OnDestroy");
+        }
+
+        private void OutputMesssage(string msg)
+        {
+            UniLog.Log(msg);
+            output?.World?.RunSynchronously(() => output.Value = msg);
+            Dialog?.Slot?.World?.Debug?.Text(msg);
             FrooxEngineBootstrap.LogStream.Flush();
         }
 
-        public IDictionary<object, string> UpdateAndValidate()
+        public IDictionary<object, string> UpdateAndValidate(object key)
         {
             var errors = new Dictionary<object, string>();
-            UniLog.Log($"Validate {matrix} {text} {output}");
+
             if (list != null)
             {
                 UniLog.Log($"List with {list.Count} items:");
@@ -138,9 +167,7 @@ namespace UIXDialogBuilder
             }
 #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 #pragma warning restore CA1308 // Normalize strings to uppercase
-            output?.World.RunSynchronously(() => output.Value = $"{matrix} {text}");
-            UniLog.Log($"Validated: {errors}");
-            FrooxEngineBootstrap.LogStream.Flush();
+            OutputMesssage($"UpdateAndValidate\nkey={key}\nlist?.Count={list?.Count}\nmatrix={matrix}\nmatrix2={matrix2}\nenum1={enum1}\nflags={flags}\ntext={text}\nerrors={errors}");
             return errors;
         }
     }

@@ -10,10 +10,12 @@ namespace UIXDialogBuilder
         string OpenSecretEditorTitle { get; }
         string SecretEditorAcceptText { get; }
         string SecretPatternText { get; }
-        float ConfigPanelHeight { get; }
         float Spacing { get; }
-        float ButtonHeight { get; }
+        float LineHeight { get; }
         float ErrorHeight { get; }
-        float2 CanvasSize { get; }
+        float UnitScale { get; }
+        float2 MinCanvasSize { get; }
+        float2 MaxCanvasSize { get; }
+        float2 CanvasSizeOffset { get; }
     }
 }

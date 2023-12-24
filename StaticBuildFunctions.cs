@@ -1,21 +1,29 @@
 ﻿using Elements.Core;
 using FrooxEngine;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes;
+using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
 using System;
+using System.Globalization;
 using System.Reflection;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Users;
+using FrooxEngine.FrooxEngine.ProtoFlux.CoreNodes;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Interaction;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots;
 
 namespace UIXDialogBuilder
 {
-    internal class StaticBuildFunctions
+    //TODO: making it public?
+    internal static class StaticBuildFunctions
     {
-        private class MappedValue<I, O> //TODO: ensure that reset works with mapping
+        private class MappedValue<TInner, TOuter>
         {
-            internal O OValue;
-            internal I IValue
+            internal TOuter Outer;
+            internal TInner Inner
             {
                 get
                 {
-                    if (mapper.TryUnmap(OValue, out var iVal))
+                    if (mapper.TryMapToInner(Outer, out var iVal))
                     {
                         return iVal;
                     }
@@ -26,179 +34,357 @@ namespace UIXDialogBuilder
                 }
                 set
                 {
-                    if (mapper.TryMap(value, out var oVal))
+                    if (mapper.TryMapToOuter(value, out var oVal))
                     {
-                        OValue = oVal;
+                        Outer = oVal;
                     }
                 }
             }
-            private readonly IReversibleMapper<I, O> mapper;
+            private readonly IReversibleMapper<TInner, TOuter> mapper;
 
-            public MappedValue(I value, IReversibleMapper<I, O> mapper)
+            public MappedValue(TInner value, IReversibleMapper<TInner, TOuter> mapper)
             {
                 this.mapper = mapper;
-                this.IValue = value;
+                Inner = value;
             }
         }
 
         internal static T BuildLineWithLabel<T>(string label, UIBuilder uiBuilder, Func<UIBuilder, T> contentGen)
         {
             uiBuilder.PushStyle();
-            uiBuilder.Style.MinHeight = 24f;
-            uiBuilder.Panel();
 
-            Text text2 = uiBuilder.Text(label + ":", bestFit: true, Alignment.MiddleLeft, parseRTF: false);
-            text2.Color.Value = colorX.Black;
+            uiBuilder.Style.MinHeight = ModInstance.Current.LineHeight;
+            uiBuilder.HorizontalLayout(4f);
+
+            uiBuilder.Style.FlexibleWidth = 0.25f;
+            uiBuilder.Style.PreferredWidth = 0f;
+            uiBuilder.Style.MinWidth = 0f;
+            uiBuilder.Style.UseZeroMetrics = true;
+
+            uiBuilder.Style.TextAutoSizeMax = ModInstance.Current.LineHeight;
+            uiBuilder.Style.PreferredHeight = ModInstance.Current.LineHeight;
+            uiBuilder.Text(label + ":", bestFit: true, Alignment.MiddleLeft, parseRTF: false);
             uiBuilder.CurrentRect.AnchorMax.Value = new float2(0.25f, 1f);
 
-            var rect = uiBuilder.Panel();
+            uiBuilder.Style.PreferredHeight = -1f;
+            uiBuilder.Style.FlexibleWidth = 0.75f;
+            uiBuilder.HorizontalLayout();
 
-            rect.AnchorMin.Value = new float2(0.25f, 0f);
+            uiBuilder.PopStyle();
+
             var result = contentGen(uiBuilder);
 
             uiBuilder.NestOut();
             uiBuilder.NestOut();
-            uiBuilder.PopStyle();
 
             return result;
         }
 
-        internal static Action BuildEditor(Slot ifieldSlot, object valueObj, FieldInfo prop, Action onChange, UIBuilder uiBuilder, DialogOptionAttribute conf)
+        internal static Action BuildEditorWithMapping<TInner, TOuter>(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<TInner> setInner,
+            Func<TInner> getInner,
+            bool isSecret,
+            string name,
+            ICustomAttributeProvider customAttributes,
+            IReversibleMapper<TInner, TOuter> mapper,
+            IEditorGenerator<TOuter> editorGenerator)
         {
-            if (ifieldSlot == null) throw new ArgumentNullException(nameof(ifieldSlot));
-            if (valueObj == null) throw new ArgumentNullException(nameof(valueObj));
-            if (prop == null) throw new ArgumentNullException(nameof(prop));
-            if (onChange == null) throw new ArgumentNullException(nameof(onChange));
-            if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
-            if (conf == null) throw new ArgumentNullException(nameof(conf));
+            (Action<TOuter> setOuter, Func<TOuter> getOuter) = mapper.Apply(setInner, getInner);
+            return BuildEditor(uiBuilder, iFieldSlot, setOuter, getOuter, isSecret, name, customAttributes, editorGenerator);
+        }
 
-            if (conf.ToOutsideWorldMapper != null)
+        internal static Action BuildEditor<T>(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<T> setInner,
+            Func<T> getInner,
+            bool isSecret,
+            string name,
+            ICustomAttributeProvider customAttributes,
+            IEditorGenerator<T> editorGenerator)
+        {
+            Action reset;
+            const BindingFlags FLAGS = BindingFlags.NonPublic | BindingFlags.Static;
+            var type = typeof(T);
+            if (typeof(Type) == type)
             {
-                ApplyMapping(conf.ToOutsideWorldMapper, ref valueObj, ref prop, ref onChange);
+                reset = (Action)typeof(StaticBuildFunctions)
+                    .GetMethod(nameof(BuildTypeEditor))
+                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes, editorGenerator });
             }
-            (IField field, Action reset) = BuildField(ifieldSlot, valueObj, prop, onChange);
-            SyncMemberEditorBuilder.Build(
-                field,
-                null,
-                prop,
-                uiBuilder
-            );
-            if (conf.Secret && uiBuilder.Current.ChildrenCount > 0)
+            else if (typeof(IWorldElement).IsAssignableFrom(type))
+            {
+                reset = (Action)typeof(StaticBuildFunctions)
+                    .GetGenericMethod(nameof(BuildReferenceEditor), FLAGS, type)
+                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes, editorGenerator });
+            }
+            else
+            {
+                reset = (Action)typeof(StaticBuildFunctions)
+                    .GetGenericMethod(nameof(BuildValueEditor), FLAGS, type)
+                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes, editorGenerator });
+            }
+
+            if (isSecret && uiBuilder.Current.ChildrenCount > 0)
             {
                 Slot added = uiBuilder.Current;
                 added.ForeachComponentInChildren<TextField>(textField =>
+                {
+                    var patternField = textField.Text?.MaskPattern;
+                    if (patternField != null)
                     {
-                        var patternField = textField.Text?.MaskPattern;
-                        if (patternField != null)
-                        {
-                            patternField.Value = ModInstance.Current.SecretPatternText;
-                        }
+                        patternField.Value = ModInstance.Current.SecretPatternText;
                     }
+                }
                 );
             }
             return reset;
         }
 
-        private static void ApplyMapping(Type reversibleMapper, ref object valueObj, ref FieldInfo prop, ref Action onChange)
-        {
-            //save original values to create adapters
-            object originalObj = valueObj;
-            FieldInfo originalProp = prop;
-            Action originalOnChange = onChange;
-
-            //create adapters
-            Type[] mappingTypes = reversibleMapper.GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>));
-            if (mappingTypes == null)
-            {
-                throw new ArgumentException("Expected implementation of " + typeof(IReversibleMapper<,>).Name, nameof(reversibleMapper)); //TODO: move to constructor
-            }
-            Type adaptedType = typeof(MappedValue<,>).MakeGenericType(mappingTypes);
-            FieldInfo adaptedProp = adaptedType.GetField(nameof(MappedValue<object, object>.OValue), BindingFlags.NonPublic | BindingFlags.Instance);
-            PropertyInfo iValueProp = adaptedType.GetProperty(nameof(MappedValue<object, object>.IValue), BindingFlags.NonPublic | BindingFlags.Instance);
-            object mapperInstance = reversibleMapper.GetConstructor(Array.Empty<Type>()).Invoke(Array.Empty<object>());
-            object adaptedObj = adaptedType
-                .GetConstructor(new Type[] { mappingTypes[0], typeof(IReversibleMapper<,>).MakeGenericType(mappingTypes) })
-                .Invoke(new object[] { originalProp.GetValue(originalObj), mapperInstance });
-            void adaptedOnChange()
-            {
-                object newValue = iValueProp.GetValue(adaptedObj);
-                UniLog.Log(newValue);
-                originalProp.SetValue(originalObj, newValue);
-                originalOnChange();
-            }
-
-            //replace original values with adapters
-            valueObj = adaptedObj;
-            prop = adaptedProp;
-            onChange = adaptedOnChange;
-        }
-
         internal static void BuildSecretButton(UIBuilder uiBuilder, Action onClick)
         {
+            uiBuilder.PushStyle();
+            uiBuilder.Style.MinHeight = ModInstance.Current.LineHeight;
             Button button = uiBuilder.Button(ModInstance.Current.OpenSecretEditorTitle);
             button.LocalPressed += (b, d) =>
             {
                 onClick();
             };
+            uiBuilder.PopStyle();
         }
 
-        private static (IField field, Action reset) BuildField(Slot ifieldSlot, object valueObj, FieldInfo prop, Action onChange)
-        {
-            return ((IField field, Action reset))FieldBuilder(prop)
-                ?.Invoke(null, new object[] { ifieldSlot, valueObj, prop, onChange });
-        }
 
-        private static MethodInfo FieldBuilder(FieldInfo prop)
-        {
-            const BindingFlags FLAGS = BindingFlags.NonPublic | BindingFlags.Static;
-            if (typeof(IWorldElement).IsAssignableFrom(prop.FieldType))
-            {
-                return typeof(StaticBuildFunctions)
-                    .GetGenericMethod(nameof(BuildReferenceField), FLAGS, prop.FieldType);
-            }
-            else
-            {
-                return typeof(StaticBuildFunctions)
-                    .GetGenericMethod(nameof(BuildValueField), FLAGS, prop.FieldType);
-            }
-        }
 
-        private static (IField field, Action reset) BuildReferenceField<V>(Slot slot, object obj, FieldInfo prop, Action onChange) where V : class, IWorldElement
+        private static Action BuildTypeEditor(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<Type> setInner,
+            Func<Type> getInner,
+            string name,
+            ICustomAttributeProvider customAttributes,
+            IEditorGenerator<Type> editorGenerator)
         {
-            var value = slot.AttachComponent<ReferenceField<V>>().Reference;
+            var value = iFieldSlot.AttachComponent<TypeField>().Type;
 
             void reset()
             {
-                value.Target = (V)prop.GetValue(obj);
-            }
-
-            reset();
-            value.OnTargetChange += (x) =>
-            {
-                prop.SetValue(obj, x.Target);
-                onChange();
-            };
-            return (value, reset);
-        }
-
-        private static (IField field, Action reset) BuildValueField<V>(Slot slot, object obj, FieldInfo prop, Action onChange)
-        {
-            var value = slot.AttachComponent<ValueField<V>>().Value;
-
-            void reset()
-            {
-                value.Value = (V)prop.GetValue(obj);
+                value.Value = getInner();
             }
 
             reset();
             value.OnValueChange += (x) =>
             {
-                prop.SetValue(obj, x.Value);
-                onChange();
+                setInner(x);
             };
-            return (value, reset);
+
+            if (editorGenerator != null)
+            {
+                editorGenerator.Generate(uiBuilder, value, customAttributes);
+            }
+            else
+            {
+                SyncMemberEditorBuilder.Build(
+                    value,
+                    null,
+                    new FieldInfoDecorator(typeof(TypeField).GetField(nameof(TypeField.Type)), customAttributes, name),
+                    uiBuilder
+                );
+            }
+            return reset;
         }
 
+        private static Action BuildReferenceEditor<T>(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<T> setInner,
+            Func<T> getInner,
+            string name,
+            ICustomAttributeProvider customAttributes,
+            IEditorGenerator<T> editorGenerator) where T : class, IWorldElement
+        {
+            var value = iFieldSlot.AttachComponent<ReferenceField<T>>().Reference;
 
+            void reset()
+            {
+                value.Target = getInner();
+            }
+
+            reset();
+            value.OnTargetChange += (x) =>
+            {
+                setInner(x);
+            };
+
+            if (editorGenerator != null)
+            {
+                editorGenerator.Generate(uiBuilder, value, customAttributes);
+            }
+            else
+            {
+                SyncMemberEditorBuilder.Build(
+                    value,
+                    null,
+                    new FieldInfoDecorator(typeof(ReferenceField<T>).GetField(nameof(ReferenceField<T>.Reference)), customAttributes, name),
+                    uiBuilder
+                );
+            }
+            return reset;
+        }
+
+        private static Action BuildValueEditor<T>(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<T> setInner,
+            Func<T> getInner,
+            string name,
+            ICustomAttributeProvider customAttributes,
+            IEditorGenerator<T> editorGenerator)
+        {
+            var value = iFieldSlot.AttachComponent<ValueField<T>>().Value;
+
+            void reset()
+            {
+                value.Value = getInner();
+            }
+
+            reset();
+            value.OnValueChange += (x) =>
+            {
+                setInner(x);
+            };
+
+            if (editorGenerator != null)
+            {
+                editorGenerator.Generate(uiBuilder, value, customAttributes);
+            }
+            else
+            {
+                SyncMemberEditorBuilder.Build(
+                    value,
+                    null,
+                    new FieldInfoDecorator(typeof(ValueField<T>).GetField(nameof(ValueField<T>.Value)), customAttributes, name),
+                    uiBuilder
+                );
+            }
+
+            return reset;
+        }
+
+        public static void AddPrivateAction(this Button button, Action<User> onPressed)
+        {
+            if (button == null) throw new ArgumentNullException(nameof(button));
+            if (onPressed == null) throw new ArgumentNullException(nameof(onPressed));
+
+            button.LocalPressed += (IButton b, ButtonEventData bed) =>
+            {
+                onPressed(b.World.LocalUser);
+            };
+            var localEnabled = button.Slot.AttachComponent<ValueUserOverride<bool>>();
+            localEnabled.Target.Target = button.EnabledField;
+            localEnabled.Default.Value = false;
+            localEnabled.CreateOverrideOnWrite.Value = true;
+        }
+
+        public static void AddPublicAction(this IButton button, Action<User> onPressed)
+        {
+            if (button == null) throw new ArgumentNullException(nameof(button));
+            if (onPressed == null) throw new ArgumentNullException(nameof(onPressed));
+
+            var protoflux = button.Slot.AddSlot("Protoflux");
+            var template = button.Slot.AddSlot("Event");
+            var queue = button.Slot.AddSlot("Queue");
+            var userVar = template.AttachComponent<ReferenceField<User>>();
+            var templateRef = protoflux.AttachComponent<RefObjectInput<Slot>>();
+            templateRef.Target.Target = template;
+            var queueRef = protoflux.AttachComponent<RefObjectInput<Slot>>();
+            queueRef.Target.Target = queue;
+            var localUser = protoflux.AttachComponent<LocalUser>();
+            var userSource = protoflux.AttachComponent<ReferenceSource<User>>();
+            var userSourceRef = protoflux.AttachComponent<GlobalReference<SyncRef<User>>>();
+            userSource.Source.Target = userSourceRef;
+            userSourceRef.Reference.Target = userVar.Reference;
+
+            var buttonRef = protoflux.AttachComponent<GlobalReference<IButton>>();
+            buttonRef.Reference.Target = button;
+            var buttonEvents = protoflux.AttachComponent<ButtonEvents>();
+            buttonEvents.Button.Target = buttonRef;
+            var setUser = protoflux.AttachComponent<ObjectWrite<FrooxEngineContext, User>>();
+            setUser.Value.Target = localUser;
+            setUser.Variable.Target = userSource;
+            var duplicate = protoflux.AttachComponent<DuplicateSlot>();
+            duplicate.Template.Target = templateRef;
+            var reparent = protoflux.AttachComponent<SetParent>();
+            reparent.Instance.Target = duplicate.Duplicate;
+            reparent.NewParent.Target = queueRef;
+
+            buttonEvents.Pressed.Target = setUser;
+            setUser.OnWritten.Target = duplicate;
+            duplicate.Next.Target = reparent;
+
+            queue.ChildAdded += (_, child) =>
+            {
+                var user = child.GetComponent<ReferenceField<User>>()?.Reference.Target;
+                child.ReferenceID.ExtractIDs(out ulong position, out byte allocationID);
+                if (user != null && user == child.World.GetUserByAllocationID(allocationID))
+                {
+                    onPressed(user);
+                }
+                child.Destroy();
+            };
+        }
+
+        private class FieldInfoDecorator : FieldInfo
+        {
+            private readonly FieldInfo field;
+            private readonly ICustomAttributeProvider customAttributes;
+            private readonly string name;
+
+            public FieldInfoDecorator(FieldInfo field, ICustomAttributeProvider customAttributes, string name)
+            {
+                this.field = field;
+                this.customAttributes = customAttributes;
+                this.name = name;
+            }
+
+            public override RuntimeFieldHandle FieldHandle => field.FieldHandle;
+
+            public override Type FieldType => field.FieldType;
+
+            public override FieldAttributes Attributes => field.Attributes;
+
+            public override string Name => name;
+
+            public override Type DeclaringType => field.DeclaringType;
+
+            public override Type ReflectedType => field.ReflectedType;
+
+            public override object[] GetCustomAttributes(bool inherit)
+            {
+                return customAttributes.GetCustomAttributes(inherit);
+            }
+
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+            {
+                return customAttributes.GetCustomAttributes(attributeType, inherit);
+            }
+
+            public override object GetValue(object obj)
+            {
+                return field.GetValue(obj);
+            }
+
+            public override bool IsDefined(Type attributeType, bool inherit)
+            {
+                return customAttributes.IsDefined(attributeType, inherit);
+            }
+
+            public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+            {
+                field.SetValue(obj, value, invokeAttr, binder, culture);
+            }
+        }
     }
+
 }

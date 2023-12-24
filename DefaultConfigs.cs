@@ -8,11 +8,13 @@ namespace UIXDialogBuilder
         public static string OpenSecretEditorTitle => "Edit";
         public static string SecretEditorAcceptText => "OK";
         public static string SecretPatternText => "*";
-        public static float ConfigPanelHeight => 0.25f;
-        public static float Spacing => 4f;
-        public static float ButtonHeight => 24f;
-        public static float ErrorHeight => 8f;
-        public static float2 CanvasSize => new float2(200f, 108f);
+        public static float Spacing => 8f;
+        public static float LineHeight => 24f;
+        public static float ErrorHeight => 12f;
+        public static float UnitScale => 1 / 1024f;
+        public static float2 MinCanvasSize => new float2(500, 250);
+        public static float2 MaxCanvasSize => new float2(500, 800);
+        public static float2 CanvasSizeOffset => new float2(500, 131);
 
         public static bool DebugEnabled => true;
     }

@@ -1,6 +1,5 @@
 ﻿using FrooxEngine.UIX;
 using System;
-using System.Collections.Generic;
 
 namespace UIXDialogBuilder
 {
@@ -8,9 +7,8 @@ namespace UIXDialogBuilder
     /// An object specifying a dialog entry
     /// </summary>
     /// <typeparam name="T">type of the dialog object</typeparam>
-    public interface IDialogEntryDefinition<in T> where T : IDialogState //TODO: custom enum handling
+    public interface IDialogEntryDefinition<in T> where T : IDialogState
     {
-        //TODO: change onChange to accept argument of type T?
         /// <summary>
         /// Creates a dialog entry
         /// </summary>
@@ -23,7 +21,7 @@ namespace UIXDialogBuilder
         (
             UIBuilder uiBuilder,
             T dialogState,
-            Func<(IDictionary<object, string>, IDictionary<object, string>)> onChange,
+            Action<object> onInput,
             bool inUserspace = false
         );
     }

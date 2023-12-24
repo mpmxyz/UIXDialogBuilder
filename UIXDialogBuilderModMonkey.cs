@@ -18,12 +18,13 @@ namespace UIXDialogBuilder
         public string OpenSecretEditorTitle => DefaultConfigs.OpenSecretEditorTitle;
         public string SecretEditorAcceptText => DefaultConfigs.SecretEditorAcceptText;
         public string SecretPatternText => DefaultConfigs.SecretPatternText;
-        public float ConfigPanelHeight => DefaultConfigs.ConfigPanelHeight;
         public float Spacing => DefaultConfigs.Spacing;
-        public float ButtonHeight => DefaultConfigs.ButtonHeight;
+        public float LineHeight => DefaultConfigs.LineHeight;
         public float ErrorHeight => DefaultConfigs.ErrorHeight;
-        public float2 CanvasSize => DefaultConfigs.CanvasSize;
-
+        public float UnitScale => DefaultConfigs.UnitScale;
+        public float2 MinCanvasSize => DefaultConfigs.MinCanvasSize;
+        public float2 MaxCanvasSize => DefaultConfigs.MaxCanvasSize;
+        public float2 CanvasSizeOffset => DefaultConfigs.CanvasSizeOffset;
 
         public UIXDialogBuilderModMonkey()
         {
