@@ -10,7 +10,7 @@ namespace UIXDialogBuilder
     {
         public override string Name => "UIXDialogBuilder";
         public override string Author => "mpmxyz";
-        public override string Version => "0.1.0"; //Version of the mod, should match the AssemblyVersion
+        public override string Version => "0.2.0"; //Version of the mod, should match the AssemblyVersion
         public override string Link => "https://github.com/mpmxyz/UIXDialogBuilder";
 
         public UIXDialogBuilderModRML()

@@ -16,6 +16,6 @@ namespace UIXDialogBuilder
         public static float2 MaxCanvasSize => new float2(500, 800);
         public static float2 CanvasSizeOffset => new float2(500, 131);
 
-        public static bool DebugEnabled => true;
+        public static bool DebugEnabled => false;
     }
 }

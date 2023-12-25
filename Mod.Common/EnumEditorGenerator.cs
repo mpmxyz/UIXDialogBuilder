@@ -11,17 +11,19 @@ using System.Reflection;
 
 namespace UIXDialogBuilder
 {
-    public class EnumEditorGenerator<TEnum> : IEditorGenerator<ulong>
+    public class EnumEditorGenerator<TEnum> : IEditorGenerator<TEnum>
         where TEnum : unmanaged, Enum
     {
+        private readonly Type enumType;
         private readonly ulong[] incrementingValues;
         private readonly ulong[] decrementingValues;
         private readonly (ulong, string)[] valueNames;
 
         public EnumEditorGenerator()
         {
-            var values = Enum.GetValues(typeof(TEnum)).Cast<TEnum>().Select(x => Convert.ToUInt64(x, CultureInfo.InvariantCulture)).ToArray();
-            var names = Enum.GetNames(typeof(TEnum));
+            enumType = typeof(TEnum);
+            var values = Enum.GetValues(enumType).Cast<TEnum>().Select(x => Convert.ToUInt64(x, CultureInfo.InvariantCulture)).ToArray();
+            var names = Enum.GetNames(enumType);
             incrementingValues = values.Distinct().ToArray();
             decrementingValues = incrementingValues.Reverse().ToArray();
             valueNames = values.Select((x, i) => (x, names[i])).ToArray();
@@ -30,8 +32,8 @@ namespace UIXDialogBuilder
         public Action Generate(
             UIBuilder uiBuilder,
             Slot iFieldSlot,
-            Action<ulong> setInner,
-            Func<ulong> getInner,
+            Action<TEnum> setInner,
+            Func<TEnum> getInner,
             bool isSecret,
             string name,
             ICustomAttributeProvider customAttributes)
@@ -45,17 +47,17 @@ namespace UIXDialogBuilder
 
             void reset()
             {
-                underlyingField.Value = getInner();
+                underlyingField.Value = Convert.ToUInt64(getInner(), CultureInfo.InvariantCulture);
             }
 
             reset();
 
             underlyingField.OnValueChange += (x) =>
             {
-                setInner(x);
+                setInner((TEnum)Enum.ToObject(enumType, x));
             };
 
-            if (typeof(TEnum).GetCustomAttribute<FlagsAttribute>() == null)
+            if (enumType.GetCustomAttribute<FlagsAttribute>() == null)
             {
                 uiBuilder.PushStyle();
                 uiBuilder.HorizontalLayout(4f);
@@ -71,6 +73,7 @@ namespace UIXDialogBuilder
                 uiBuilder.Style.FlexibleWidth = 100f;
                 uiBuilder.Style.MinWidth = -1f;
                 var valueDrive = uiBuilder.Button().Slot.AttachComponent<ValueOptionDescriptionDriver<ulong>>();
+                //TODO: button action to spawn dropdown list
                 valueDrive.Value.Target = underlyingField;
                 valueDrive.Label.Target = valueDrive.Slot.GetComponentInChildren<Text>().Content;
                 valueDrive.DefaultOption.Label.Value = "???";

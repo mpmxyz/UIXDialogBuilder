@@ -109,15 +109,18 @@ namespace UIXDialogBuilder
             Action reset;
             const BindingFlags FLAGS = BindingFlags.NonPublic | BindingFlags.Static;
             var type = typeof(T);
+
+            if (type.IsEnum && type.IsUnmanaged() && editorGenerator == null)
+            {
+                editorGenerator = (IEditorGenerator<T>)typeof(EnumEditorGenerator<>)
+                    .MakeGenericType(typeof(T))
+                    .GetConstructor(Array.Empty<Type>())
+                    .Invoke(Array.Empty<object>());
+            }
+
             if (editorGenerator != null)
             {
                 reset = editorGenerator.Generate(uiBuilder, iFieldSlot, setInner, getInner, isSecret, name, customAttributes);
-            }
-            else if (type.IsEnum && type.IsUnmanaged())
-            {
-                reset = (Action)typeof(StaticBuildFunctions)
-                    .GetGenericMethod(nameof(BuildEnumEditor), FLAGS, type)
-                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes });
             }
             else if (typeof(Type) == type)
             {
@@ -164,27 +167,6 @@ namespace UIXDialogBuilder
                 onClick();
             };
             uiBuilder.PopStyle();
-        }
-
-        private static Action BuildEnumEditor<T>(
-            UIBuilder uiBuilder,
-            Slot iFieldSlot,
-            Action<T> setInner,
-            Func<T> getInner,
-            string name,
-            ICustomAttributeProvider customAttributes) where T : unmanaged, Enum
-        {
-            return BuildEditorWithMapping(
-                uiBuilder,
-                iFieldSlot,
-                setInner,
-                getInner,
-                false,
-                name,
-                customAttributes,
-                new ReversibleEnumMapper<T>(),
-                new EnumEditorGenerator<T>()
-            );
         }
 
         private static Action BuildTypeEditor(

@@ -205,7 +205,7 @@ namespace UIXDialogBuilder
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
             if (dialogState == null) throw new ArgumentNullException(nameof(dialogState));
 
-            var dialogRoot = uiBuilder.Current;
+            var dialogRoot = uiBuilder.Root;
 
             uiBuilder.PushStyle();
             RadiantUI_Constants.SetupEditorStyle(uiBuilder);
@@ -240,7 +240,9 @@ namespace UIXDialogBuilder
             }
             uiBuilder.PopStyle();
 
+            UniLog.Log($"{dialogState};{dialogRoot};{elements.Count};{parent}");
             dialog = new Dialog(dialogState, dialogRoot, elements, parent); //sets dialogState.Dialog already
+
             onInput(dialog);
             return dialog;
         }
