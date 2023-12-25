@@ -62,6 +62,15 @@ namespace UIXDialogBuilder
             ALL = 7
         }
 
+        private struct TestStruct
+        {
+            public int a;
+            public float b;
+            private int c;
+            public readonly int d;
+            public int e => c++;
+        }
+
 #pragma warning disable IDE0044 // Add readonly modifier
 #pragma warning disable CS0649 // Never assigned
         [DialogOption("List", toOutsideWorldMapper: typeof(ListMapper))]
@@ -79,6 +88,8 @@ namespace UIXDialogBuilder
         TestEnum enum1;
         [DialogOption("Flags")] //without explicit mappers
         TestFlags flags;
+        [DialogOption("CustomStruct", editorGenerator: typeof(NonPrimitiveEditorGenerator<TestStruct>))]
+        TestStruct struct1;
         [DialogOption("Some Text")]
         string text;
 #pragma warning restore IDE0044 // Add readonly modifier
@@ -167,7 +178,7 @@ namespace UIXDialogBuilder
             }
 #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 #pragma warning restore CA1308 // Normalize strings to uppercase
-            OutputMesssage($"UpdateAndValidate\nkey={key}\nlist?.Count={list?.Count}\nmatrix={matrix}\nmatrix2={matrix2}\nenum1={enum1}\nflags={flags}\ntext={text}\nerrors={errors}");
+            OutputMesssage($"UpdateAndValidate\nkey={key}\nlist?.Count={list?.Count}\nmatrix={matrix}\nmatrix2={matrix2}\nenum1={enum1}\nflags={flags}\ntext={text}\nerrors={errors}\nstruct1={{a={struct1.a},b={struct1.b}}}");
             return errors;
         }
     }

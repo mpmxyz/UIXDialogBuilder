@@ -50,7 +50,7 @@ namespace UIXDialogBuilder
             }
         }
 
-        internal static T BuildLineWithLabel<T>(string label, UIBuilder uiBuilder, Func<UIBuilder, T> contentGen)
+        public static T BuildLineWithLabel<T>(string label, UIBuilder uiBuilder, Func<T> contentGen)
         {
             uiBuilder.PushStyle();
 
@@ -73,7 +73,7 @@ namespace UIXDialogBuilder
 
             uiBuilder.PopStyle();
 
-            var result = contentGen(uiBuilder);
+            var result = contentGen();
 
             uiBuilder.NestOut();
             uiBuilder.NestOut();
@@ -106,11 +106,14 @@ namespace UIXDialogBuilder
             ICustomAttributeProvider customAttributes,
             IEditorGenerator<T> editorGenerator)
         {
-            //TODO: refactor editorGenerator to also create the field
             Action reset;
             const BindingFlags FLAGS = BindingFlags.NonPublic | BindingFlags.Static;
             var type = typeof(T);
-            if (type.IsEnum && type.IsUnmanaged())
+            if (editorGenerator != null)
+            {
+                reset = editorGenerator.Generate(uiBuilder, iFieldSlot, setInner, getInner, isSecret, name, customAttributes);
+            }
+            else if (type.IsEnum && type.IsUnmanaged())
             {
                 reset = (Action)typeof(StaticBuildFunctions)
                     .GetGenericMethod(nameof(BuildEnumEditor), FLAGS, type)
@@ -120,19 +123,19 @@ namespace UIXDialogBuilder
             {
                 reset = (Action)typeof(StaticBuildFunctions)
                     .GetMethod(nameof(BuildTypeEditor))
-                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes, editorGenerator });
+                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes });
             }
             else if (typeof(IWorldElement).IsAssignableFrom(type))
             {
                 reset = (Action)typeof(StaticBuildFunctions)
                     .GetGenericMethod(nameof(BuildReferenceEditor), FLAGS, type)
-                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes, editorGenerator });
+                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes });
             }
             else
             {
                 reset = (Action)typeof(StaticBuildFunctions)
                     .GetGenericMethod(nameof(BuildValueEditor), FLAGS, type)
-                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes, editorGenerator });
+                    .Invoke(null, new object[] { uiBuilder, iFieldSlot, setInner, getInner, name, customAttributes });
             }
 
             if (isSecret && uiBuilder.Current.ChildrenCount > 0)
@@ -190,8 +193,7 @@ namespace UIXDialogBuilder
             Action<Type> setInner,
             Func<Type> getInner,
             string name,
-            ICustomAttributeProvider customAttributes,
-            IEditorGenerator<Type> editorGenerator)
+            ICustomAttributeProvider customAttributes)
         {
             var value = iFieldSlot.AttachComponent<TypeField>().Type;
 
@@ -206,19 +208,13 @@ namespace UIXDialogBuilder
                 setInner(x);
             };
 
-            if (editorGenerator != null)
-            {
-                editorGenerator.Generate(uiBuilder, value, customAttributes);
-            }
-            else
-            {
-                SyncMemberEditorBuilder.Build(
-                    value,
-                    null,
-                    new FieldInfoDecorator(typeof(TypeField).GetField(nameof(TypeField.Type)), customAttributes, name),
-                    uiBuilder
-                );
-            }
+            SyncMemberEditorBuilder.Build(
+                value,
+                null,
+                new FieldInfoDecorator(typeof(TypeField).GetField(nameof(TypeField.Type)), customAttributes, name),
+                uiBuilder
+            );
+
             return reset;
         }
 
@@ -228,8 +224,7 @@ namespace UIXDialogBuilder
             Action<T> setInner,
             Func<T> getInner,
             string name,
-            ICustomAttributeProvider customAttributes,
-            IEditorGenerator<T> editorGenerator) where T : class, IWorldElement
+            ICustomAttributeProvider customAttributes) where T : class, IWorldElement
         {
             var value = iFieldSlot.AttachComponent<ReferenceField<T>>().Reference;
 
@@ -244,19 +239,12 @@ namespace UIXDialogBuilder
                 setInner(x);
             };
 
-            if (editorGenerator != null)
-            {
-                editorGenerator.Generate(uiBuilder, value, customAttributes);
-            }
-            else
-            {
-                SyncMemberEditorBuilder.Build(
-                    value,
-                    null,
-                    new FieldInfoDecorator(typeof(ReferenceField<T>).GetField(nameof(ReferenceField<T>.Reference)), customAttributes, name),
-                    uiBuilder
-                );
-            }
+            SyncMemberEditorBuilder.Build(
+                value,
+                null,
+                new FieldInfoDecorator(typeof(ReferenceField<T>).GetField(nameof(ReferenceField<T>.Reference)), customAttributes, name),
+                uiBuilder
+            );
             return reset;
         }
 
@@ -266,8 +254,7 @@ namespace UIXDialogBuilder
             Action<T> setInner,
             Func<T> getInner,
             string name,
-            ICustomAttributeProvider customAttributes,
-            IEditorGenerator<T> editorGenerator)
+            ICustomAttributeProvider customAttributes)
         {
             var value = iFieldSlot.AttachComponent<ValueField<T>>().Value;
 
@@ -282,19 +269,12 @@ namespace UIXDialogBuilder
                 setInner(x);
             };
 
-            if (editorGenerator != null)
-            {
-                editorGenerator.Generate(uiBuilder, value, customAttributes);
-            }
-            else
-            {
-                SyncMemberEditorBuilder.Build(
-                    value,
-                    null,
-                    new FieldInfoDecorator(typeof(ValueField<T>).GetField(nameof(ValueField<T>.Value)), customAttributes, name),
-                    uiBuilder
-                );
-            }
+            SyncMemberEditorBuilder.Build(
+                value,
+                null,
+                new FieldInfoDecorator(typeof(ValueField<T>).GetField(nameof(ValueField<T>.Value)), customAttributes, name),
+                uiBuilder
+            );
 
             return reset;
         }
@@ -362,7 +342,7 @@ namespace UIXDialogBuilder
             };
         }
 
-        private class FieldInfoDecorator : FieldInfo
+        public class FieldInfoDecorator : FieldInfo
         {
             private readonly FieldInfo field;
             private readonly ICustomAttributeProvider customAttributes;

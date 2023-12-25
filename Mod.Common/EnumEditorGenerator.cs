@@ -27,10 +27,33 @@ namespace UIXDialogBuilder
             valueNames = values.Select((x, i) => (x, names[i])).ToArray();
         }
 
-        public void Generate(UIBuilder uiBuilder, IField field, ICustomAttributeProvider customAttributes)
+        public Action Generate(
+            UIBuilder uiBuilder,
+            Slot iFieldSlot,
+            Action<ulong> setInner,
+            Func<ulong> getInner,
+            bool isSecret,
+            string name,
+            ICustomAttributeProvider customAttributes)
         {
             if (uiBuilder == null) throw new ArgumentNullException(nameof(uiBuilder));
-            if (!(field is IField<ulong> underlyingField)) throw new ArgumentException($"A field of type {typeof(IField<ulong>)} is required!", nameof(field));
+            if (iFieldSlot == null) throw new ArgumentNullException(nameof(iFieldSlot));
+            if (setInner == null) throw new ArgumentNullException(nameof(setInner));
+            if (getInner == null) throw new ArgumentNullException(nameof(getInner));
+
+            var underlyingField = iFieldSlot.AttachComponent<ValueField<ulong>>().Value;
+
+            void reset()
+            {
+                underlyingField.Value = getInner();
+            }
+
+            reset();
+
+            underlyingField.OnValueChange += (x) =>
+            {
+                setInner(x);
+            };
 
             if (typeof(TEnum).GetCustomAttribute<FlagsAttribute>() == null)
             {
@@ -51,11 +74,11 @@ namespace UIXDialogBuilder
                 valueDrive.Value.Target = underlyingField;
                 valueDrive.Label.Target = valueDrive.Slot.GetComponentInChildren<Text>().Content;
                 valueDrive.DefaultOption.Label.Value = "???";
-                foreach ((var value, var name) in valueNames)
+                foreach ((var value, var valueName) in valueNames)
                 {
                     var option = valueDrive.Options.Add();
                     option.ReferenceValue.Value = value;
-                    option.Label.Value = name;
+                    option.Label.Value = valueName;
                 }
                 uiBuilder.Style.FlexibleWidth = -1f;
                 uiBuilder.Style.MinWidth = ModInstance.Current.LineHeight;
@@ -74,9 +97,9 @@ namespace UIXDialogBuilder
                 uiBuilder.VerticalLayout(4f);
                 uiBuilder.Style.MinHeight = ModInstance.Current.LineHeight;
                 uiBuilder.Style.FlexibleWidth = 1f;
-                foreach ((var value, var name) in valueNames)
+                foreach ((var value, var valueName) in valueNames)
                 {
-                    var checkbox = uiBuilder.Checkbox(name);
+                    var checkbox = uiBuilder.Checkbox(valueName);
                     var protoFlux = checkbox.Slot.AddSlot("Protoflux");
 
                     var setter = checkbox.Slot.AttachComponent<ButtonValueCycle<ulong>>();
@@ -119,6 +142,8 @@ namespace UIXDialogBuilder
                 uiBuilder.NestOut();
                 uiBuilder.PopStyle();
             }
+
+            return reset;
         }
     }
 }

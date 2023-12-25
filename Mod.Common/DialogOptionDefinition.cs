@@ -120,12 +120,12 @@ namespace UIXDialogBuilder
             Action reset;
             Action<IDictionary<object, string>, IDictionary<object, string>> setSecretError;
             (reset, setSecretError) = StaticBuildFunctions.BuildLineWithLabel<(Action, Action<IDictionary<object, string>, IDictionary<object, string>>)>(
-                conf.Name, uiBuilder, (uiBuilder2) =>
+                conf.Name, uiBuilder, () =>
             {
                 if (conf.Secret && !inUserspace)
                 {
                     var secretDialog = new SecretDialog(conf.Name, this, dialogState, onInput);
-                    StaticBuildFunctions.BuildSecretButton(uiBuilder2, () => secretDialog.Open());
+                    StaticBuildFunctions.BuildSecretButton(uiBuilder, () => secretDialog.Open());
                     return (secretDialog.Reset, secretDialog.DisplayError);
                 }
                 else
@@ -134,8 +134,8 @@ namespace UIXDialogBuilder
                     if (mapper == null)
                     {
                         return (StaticBuildFunctions.BuildEditor(
-                            uiBuilder2,
-                            uiBuilder2.Root,
+                            uiBuilder,
+                            uiBuilder.Root,
                             (x) => { setter(dialogState, x); onInput(key); },
                             () => getter(dialogState),
                             conf.Secret,
@@ -151,8 +151,8 @@ namespace UIXDialogBuilder
                             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
                             mapper.GetType().GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>))
                         ).Invoke(null, new object[]{
-                            uiBuilder2,
-                            uiBuilder2.Root,
+                            uiBuilder,
+                            uiBuilder.Root,
                             (Action<TValue>)((x) => { setter(dialogState, x); onInput(key); }),
                             (Func<TValue>)(() => getter(dialogState)),
                             conf.Secret,
