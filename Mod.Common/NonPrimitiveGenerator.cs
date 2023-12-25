@@ -62,7 +62,8 @@ namespace UIXDialogBuilder
             return StaticBuildFunctions.BuildEditor(
                 uiBuilder,
                 iFieldSlot,
-                (x) => {
+                (x) =>
+                {
                     object innerValue = getInner();
                     field.SetValue(innerValue, x);
                     //The following line is necessary because valuetypes can only be edited when boxed or with more advanced trickery.
