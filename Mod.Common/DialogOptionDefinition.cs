@@ -130,8 +130,7 @@ namespace UIXDialogBuilder
                 }
                 else
                 {
-                    var mapper = conf.CreateMapper(dialogState);
-                    if (mapper == null)
+                    if (conf.ToOutsideWorldMapper == null)
                     {
                         return (StaticBuildFunctions.BuildEditor(
                             uiBuilder,
@@ -146,10 +145,14 @@ namespace UIXDialogBuilder
                     }
                     else
                     {
+                        var mapper = conf.ToOutsideWorldMapper.Construct(dialogState);
+                        var typeArgs = mapper.GetType().GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>))
+                            ?? throw new InvalidOperationException($"Assertion failed: mapper is not an implementation of {typeof(IReversibleMapper<,>)}");
+
                         return ((Action)typeof(StaticBuildFunctions).GetGenericMethod(
                             nameof(StaticBuildFunctions.BuildEditorWithMapping),
                             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-                            mapper.GetType().GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>))
+                            typeArgs
                         ).Invoke(null, new object[]{
                             uiBuilder,
                             uiBuilder.Root,

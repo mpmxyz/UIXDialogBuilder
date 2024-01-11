@@ -90,6 +90,8 @@ namespace UIXDialogBuilder
         TestFlags flags;
         [DialogOption("CustomStruct", editorGenerator: typeof(NonPrimitiveEditorGenerator<TestStruct>))]
         TestStruct struct1;
+        [DialogOption("Tuple", editorGenerator: typeof(NonPrimitiveEditorGenerator<(int a, float b, string c)>))]
+        (int a, float b, string c) tuple;
         [DialogOption("Some Text")]
         string text;
 #pragma warning restore IDE0044 // Add readonly modifier
@@ -134,7 +136,6 @@ namespace UIXDialogBuilder
         {
             UniLog.Log(msg);
             output?.World?.RunSynchronously(() => output.Value = msg);
-            Dialog?.Slot?.World?.Debug?.Text(msg);
             FrooxEngineBootstrap.LogStream.Flush();
         }
 
@@ -150,7 +151,7 @@ namespace UIXDialogBuilder
                     UniLog.Log($" {item}");
                     if (item.Length == 0)
                     {
-                        errors.Add(nameof(list), "Items must be non-empty!");
+                        errors[nameof(list)]="Items must be non-empty!";
                     }
                 }
             }
@@ -178,7 +179,7 @@ namespace UIXDialogBuilder
             }
 #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 #pragma warning restore CA1308 // Normalize strings to uppercase
-            OutputMesssage($"UpdateAndValidate\nkey={key}\nlist?.Count={list?.Count}\nmatrix={matrix}\nmatrix2={matrix2}\nenum1={enum1}\nflags={flags}\ntext={text}\nerrors={errors}\nstruct1={{a={struct1.a},b={struct1.b}}}");
+            OutputMesssage($"UpdateAndValidate\nkey={key}\nlist?.Count={list?.Count}\nmatrix={matrix}\nmatrix2={matrix2}\nenum1={enum1}\nflags={flags}\ntext={text}\nerrors={errors}\nstruct1={{a={struct1.a},b={struct1.b}}}\ntuple=({tuple.a}, {tuple.b}, {tuple.c})");
             return errors;
         }
     }

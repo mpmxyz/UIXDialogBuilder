@@ -48,7 +48,7 @@ Notable features visible:
 2. Make sure the package source https://nuget.pkg.github.com/mpmxyz/index.json is set up.
 3. Add PackageReference to ```mpmxyz.UIXDialogBuilder.MonkeyLoader``` in ```*MonkeyLoader.csproj```
 
-### Creating a dialog
+### Hello World
 1. Create a class that represents the state of the dialog:
     ```cs
     class HelloWorldDialogState : IDialogState
@@ -59,6 +59,7 @@ Notable features visible:
         [DialogOption("Output")]
         IField<string> output;
 
+        //set when bound to dialog, unset when unbound
         public Dialog Dialog
         {
             set;
@@ -103,11 +104,21 @@ Notable features visible:
     ```cs
     World world = ...;
     //creates a dialog in the world of your choice
-    (Dialog dialog, Slot window) = builder.BuildWindow("Test", world, new TestDialogState())
+    (Dialog dialog, Slot window) = builder.BuildWindow("Test", world, new TestDialogState());
     ```
-    Note: The builder can be reused!
+    Notes:
+    - The builder can be reused.
+    - The state may be bound to another dialog after it has been unbound. (assignment to ```Dialog```)
 
 ### Dialog customization
+#### 
+#### Dialog class
+#### Attributes
+- TODO
+#### Mapping of types
+- TODO
+#### Custom editors
+#### 
 - TODO: attributes
 - TODO: ```Dialog``` class
 - TODO: mapping of types

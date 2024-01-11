@@ -15,20 +15,10 @@ namespace UIXDialogBuilder
         public Type ToOutsideWorldMapper { get; }
         public Type EditorGenerator { get; }
 
-        public IReversibleMapper CreateMapper(object valueOwner)
-        {
-            return (IReversibleMapper)ToOutsideWorldMapper?.Construct(valueOwner);
-        }
-
         public bool HasMapperFor(Type ownerType, Type valueType)
         {
             return ToOutsideWorldMapper.HasConstructorFor(ownerType)
                 && ToOutsideWorldMapper.GetGenericArgumentsFromInterface(typeof(IReversibleMapper<,>))?[0] == valueType;
-        }
-
-        public object CreateUIGenerator<TValue>(object valueOwner)
-        {
-            return (IEditorGenerator<TValue>)EditorGenerator?.Construct(valueOwner);
         }
 
         public bool HasEditorGeneratorFor(Type ownerType, Type innerType)

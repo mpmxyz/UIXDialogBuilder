@@ -8,7 +8,7 @@ namespace UIXDialogBuilder
     /// Defines the behaviour of a dialog <br/>
     /// <see cref="IDisposable.Dispose"/> is called when the dialog is destroyed (e.g. via the X button)
     /// </summary>
-    public interface IDialogState : IDisposable
+    public interface IDialogState : IDisposable //TODO: Dispose is redundant to Dialog=null;
     {
         /// <summary>
         /// The dialog this state has been bound to (only required to be assignable once)

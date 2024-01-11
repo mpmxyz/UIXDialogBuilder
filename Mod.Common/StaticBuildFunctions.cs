@@ -314,13 +314,17 @@ namespace UIXDialogBuilder
 
             queue.ChildAdded += (_, child) =>
             {
-                var user = child.GetComponent<ReferenceField<User>>()?.Reference.Target;
-                child.ReferenceID.ExtractIDs(out ulong position, out byte allocationID);
-                if (user != null && user == child.World.GetUserByAllocationID(allocationID))
+                child?.World?.RunSynchronously(() =>
                 {
-                    onPressed(user);
-                }
-                child.Destroy();
+                    var user = child.GetComponent<ReferenceField<User>>()?.Reference.Target;
+                    child.ReferenceID.ExtractIDs(out ulong position, out byte allocationID);
+                    UniLog.Log($"{user} {child.World.GetUserByAllocationID(allocationID)}");
+                    if (user != null && user == child.World.GetUserByAllocationID(allocationID))
+                    {
+                        onPressed(user);
+                    }
+                    child.Destroy();
+                });
             };
         }
 

@@ -214,7 +214,6 @@ namespace UIXDialogBuilder
             var world = uiBuilder.World;
             var inUserspace = world.IsUserspace();
 
-            uiBuilder.Root.OnPrepareDestroy += (slot) => dialogState.Dispose();
             Dialog dialog = null;
             Action<object> onInput = onInputOverride ?? ((object key) =>
             {
@@ -313,7 +312,7 @@ namespace UIXDialogBuilder
             canvasSizeProxy.Drive.Target = uiBuilder.Canvas.Size;
 
             slot.PositionInFrontOfUser(float3.Backward);
-
+            //TODO: make window slot part of dialog instance -> unified handling
             return (dialog, slot);
         }
     }

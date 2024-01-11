@@ -2,7 +2,9 @@
 using FrooxEngine;
 using FrooxEngine.UIX;
 using System;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace UIXDialogBuilder
 {
@@ -32,18 +34,27 @@ namespace UIXDialogBuilder
             Action reset = null;
 
             uiBuilder.VerticalLayout(4f);
+
+            var elementNames = ((TupleElementNamesAttribute)customAttributes
+                .GetCustomAttributes(typeof(TupleElementNamesAttribute), true)
+                .FirstOrDefault())
+                ?.TransformNames;
+
+            int i = 0;
             foreach (var field in typeof(TValue).GetFields())
             {
                 if (!field.IsInitOnly)
                 {
+                    var nameOverride = elementNames != null && i < elementNames.Count ? elementNames[i] : null;
                     reset += StaticBuildFunctions.BuildLineWithLabel(
-                        field.Name,
+                        nameOverride ?? field.Name,
                         uiBuilder,
                         () => (Action)GetType()
                         .GetGenericMethod(nameof(BuildEditor), BindingFlags.Static | BindingFlags.NonPublic, field.FieldType)
                         .Invoke(this, new object[] { uiBuilder, iFieldSlot, setInner, getInner, isSecret, name, customAttributes, field })
                     );
                 }
+                i++;
             }
             uiBuilder.NestOut();
             return reset;
